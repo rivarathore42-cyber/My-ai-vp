@@ -1,0 +1,116 @@
+/* Galaxy permission prompt: dark glass modal, glowing status dot, app badge, neumorphic buttons. Fade and scale in. */
+.perm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 4, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  z-index: 70;
+}
+.perm-backdrop.open { opacity: 1; visibility: visible; }
+.perm-card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 22px;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s ease;
+}
+.perm-backdrop.open .perm-card { opacity: 1; transform: scale(1); }
+.perm-head { display: flex; align-items: center; gap: 14px; }
+.perm-titles { min-width: 0; }
+.perm-titles h3 { margin: 0; font-size: 18px; }
+.perm-dest { margin: 2px 0 0; font-size: 12px; }
+.perm-badge {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6ea8ff, #b48cff);
+  box-shadow: 0 0 22px rgba(110, 168, 255, 0.45);
+}
+.perm-badge[data-kind="spotify"] { background: radial-gradient(circle at 30% 30%, #5ef2a0, #0e7a36); }
+.perm-badge[data-kind="whatsapp"] { background: radial-gradient(circle at 30% 30%, #7af0b0, #128c4a); }
+.perm-badge[data-kind="youtube"] { background: radial-gradient(circle at 30% 30%, #ff8d8d, #b00020); }
+.perm-badge[data-kind="call"] { background: radial-gradient(circle at 30% 30%, #9ec5ff, #1d4fb3); }
+.perm-badge[data-kind="camera"] { background: radial-gradient(circle at 30% 30%, #d6b3ff, #5b2aa6); }
+.perm-badge[data-kind="settings"] { background: radial-gradient(circle at 30% 30%, #c9cfe6, #4b5070); }
+.perm-badge[data-kind="notify"] { background: radial-gradient(circle at 30% 30%, #ffe08a, #b06a00); }
+.perm-dot {
+  position: absolute;
+  margin-left: 32px;
+  margin-top: -18px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid rgba(7, 8, 26, 0.9);
+}
+.perm-head { position: relative; }
+.perm-dot[data-tone="amber"] { background: #ffb86b; box-shadow: 0 0 12px #ffb86b; animation: perm-pulse 1.6s ease-in-out infinite; }
+.perm-dot[data-tone="blue"] { background: #6ea8ff; box-shadow: 0 0 12px #6ea8ff; animation: perm-pulse 0.9s ease-in-out infinite; }
+.perm-dot[data-tone="green"] { background: #5ef2c2; box-shadow: 0 0 12px #5ef2c2; }
+.perm-dot[data-tone="red"] { background: #ff6b8b; box-shadow: 0 0 12px #ff6b8b; }
+.perm-dot[data-tone="grey"] { background: #8b8f9e; box-shadow: none; }
+.perm-why { margin: 16px 0 10px; line-height: 1.5; font-size: 14px; }
+.perm-preview {
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  max-height: 140px;
+  overflow: auto;
+}
+.perm-preview[hidden] { display: none; }
+.perm-meta { margin: 0; font-size: 12px; color: #9aa3c7; min-height: 16px; }
+.perm-status { margin: 8px 0 14px; font-size: 13px; min-height: 18px; }
+.perm-actions { display: grid; gap: 10px; }
+.perm-btn {
+  background: #151a33;
+  color: #eef1ff;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.45), -4px -4px 10px rgba(255, 255, 255, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.perm-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.04);
+}
+.perm-btn.primary {
+  background: linear-gradient(90deg, #6ea8ff, #b48cff);
+  color: #07081a;
+  box-shadow: 0 0 22px rgba(110, 168, 255, 0.5);
+}
+.perm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.perm-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.perm-link {
+  margin-top: 12px;
+  background: none;
+  border: 0;
+  color: #9aa3c7;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.perm-link[hidden] { display: none; }
+@keyframes perm-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
+@media (prefers-reduced-motion: reduce) {
+  .perm-backdrop, .perm-card, .perm-btn, .perm-dot { transition: none !important; animation: none !important; }
+}

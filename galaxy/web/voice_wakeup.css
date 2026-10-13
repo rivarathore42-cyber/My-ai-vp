@@ -1,0 +1,239 @@
+/* Galaxy voice UI: dark glassmorphism, the voice orb and the settings modal. Local styles only, no remote fonts. */
+:root {
+  --g-bg-1: #05060f;
+  --g-bg-2: #0b1028;
+  --g-glass: rgba(255, 255, 255, 0.06);
+  --g-glass-strong: rgba(14, 18, 40, 0.74);
+  --g-border: rgba(255, 255, 255, 0.14);
+  --g-text: #eef1ff;
+  --g-muted: #9aa3c7;
+  --g-accent: #6ea8ff;
+  --g-accent-2: #b48cff;
+  --g-ok: #5ef2c2;
+  --g-warn: #ffb86b;
+  --g-glow: rgba(110, 168, 255, 0.55);
+  --g-radius: 20px;
+}
+
+body.galaxy-dark {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--g-text);
+  background: radial-gradient(1200px 700px at 15% -10%, #1b2350 0%, transparent 60%),
+              radial-gradient(900px 600px at 110% 110%, #2a1656 0%, transparent 55%),
+              linear-gradient(180deg, var(--g-bg-2), var(--g-bg-1));
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.galaxy-glass {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03)), var(--g-glass-strong);
+  border: 1px solid var(--g-border);
+  border-radius: var(--g-radius);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.muted { color: var(--g-muted); }
+
+.demo-card { max-width: 640px; margin: 40px auto; padding: 24px; }
+.demo-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.demo-row label { display: grid; gap: 6px; font-size: 13px; color: var(--g-muted); flex: 1 1 200px; }
+input[type="text"], input[type="password"], input:not([type]) {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--g-border);
+  border-radius: 12px;
+  color: var(--g-text);
+  padding: 10px 12px;
+  font: inherit;
+}
+input:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 2px; }
+
+.btn {
+  background: linear-gradient(90deg, var(--g-accent), var(--g-accent-2));
+  color: #07081a;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 0 22px var(--g-glow);
+}
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.log {
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--g-border);
+  border-radius: 14px;
+  padding: 12px;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 13px;
+}
+
+/* Settings modal */
+.voice-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 4, 12, 0.6);
+  display: none;
+  place-items: center;
+  z-index: 60;
+}
+.voice-modal-backdrop.open { display: grid; }
+.voice-modal { width: min(440px, calc(100vw - 32px)); padding: 22px; }
+.voice-settings h3 { margin: 0 0 6px; font-size: 18px; }
+.voice-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.voice-row small { display: block; color: var(--g-muted); margin-top: 4px; font-size: 12px; line-height: 1.4; }
+.sensitivity { width: 170px; accent-color: var(--g-accent); }
+.sensitivity-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 170px;
+  font-size: 12px;
+  color: var(--g-muted);
+}
+
+/* Toggle switch: a real checkbox, so keyboard and screen readers work */
+.switch { position: relative; width: 52px; height: 30px; flex: none; display: inline-block; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+.switch .track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--g-border);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.switch .track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s;
+}
+.switch input:checked + .track {
+  background: linear-gradient(90deg, var(--g-accent), var(--g-accent-2));
+  box-shadow: 0 0 18px var(--g-glow);
+}
+.switch input:checked + .track::after { transform: translateX(22px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+
+/* Voice orb: bottom-right, hidden while the wake-up is off */
+.galaxy-orb {
+  position: fixed;
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+.galaxy-orb { transition: opacity 0.35s ease, transform 0.35s ease; }
+.galaxy-orb[data-state="off"] { opacity: 0; transform: scale(0.85); pointer-events: none; }
+.galaxy-orb .orb-core {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0, #9ec5ff 25%, var(--g-accent) 55%, var(--g-accent-2) 100%);
+  box-shadow: 0 0 24px var(--g-glow), 0 0 60px rgba(180, 140, 255, 0.35);
+  animation: orb-breathe 2.8s ease-in-out infinite;
+}
+.galaxy-orb .orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(110, 168, 255, 0.55);
+  animation: orb-ring 2.4s ease-out infinite;
+}
+.galaxy-orb .orb-bars {
+  position: absolute;
+  bottom: -20px;
+  display: flex;
+  gap: 3px;
+  height: 16px;
+  align-items: flex-end;
+}
+.galaxy-orb .orb-bars i {
+  display: block;
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--g-ok);
+  opacity: 0;
+}
+.galaxy-orb[data-state="activated"] .orb-bars i { opacity: 1; animation: orb-bar 0.9s ease-in-out infinite; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(2) { animation-delay: 0.1s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(3) { animation-delay: 0.2s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(4) { animation-delay: 0.3s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(5) { animation-delay: 0.4s; }
+.galaxy-orb[data-state="activated"] .orb-core { box-shadow: 0 0 40px var(--g-accent-2), 0 0 90px var(--g-glow); }
+.galaxy-orb[data-state="thinking"] .orb-ring {
+  border-style: dashed;
+  border-color: var(--g-accent-2);
+  opacity: 1;
+  animation: orb-spin 1.2s linear infinite;
+}
+.galaxy-orb[data-state="denied"] .orb-core,
+.galaxy-orb[data-state="error"] .orb-core,
+.galaxy-orb[data-state="unsupported"] .orb-core {
+  background: radial-gradient(circle, #b9bfd6, #4b5070);
+  box-shadow: none;
+  animation: none;
+}
+.galaxy-orb[data-state="denied"] .orb-ring,
+.galaxy-orb[data-state="error"] .orb-ring { border-color: var(--g-warn); animation: none; opacity: 0.4; }
+
+.tap-card { position: fixed; left: 16px; right: 16px; bottom: 16px; max-width: 420px; margin: 0 auto; padding: 16px; z-index: 55; }
+.tap-card[hidden] { display: none; }
+
+.galaxy-orb .orb-core { transition: box-shadow 0.45s ease, transform 0.45s ease; }
+
+@keyframes orb-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes orb-ring { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.9); opacity: 0; } }
+@keyframes orb-bar { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .galaxy-orb, .galaxy-orb * { animation: none !important; }
+}
+
+/* Chat-page additions */
+.gv-fab {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  background: rgba(14, 18, 40, 0.8);
+  color: var(--g-text);
+  border: 1px solid var(--g-border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.gv-fab:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+.gv-ghost { background: transparent; color: var(--g-text); box-shadow: none; border: 1px solid var(--g-border); }
+.gv-note { font-size: 12px; margin: 10px 0 0; line-height: 1.4; }
+.gv-actions { text-align: right; margin-top: 14px; }
+.tap-card[hidden] { display: none; }

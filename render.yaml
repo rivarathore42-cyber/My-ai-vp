@@ -1,0 +1,20 @@
+# Render Blueprint: one Docker web service built from the Dockerfile in this repository.
+# Deploy: push the repository to GitHub, then in Render choose New > Blueprint and select it.
+services:
+  - type: web
+    name: galaxy-ai
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: GALAXY_OWNER_ID
+        value: owner
+      - key: GALAXY_SKIP_LLM
+        value: "1"
+      - key: GALAXY_DB
+        value: /app/data/galaxy_memory.db
+      - key: GALAXY_API_TOKEN
+        generateValue: true

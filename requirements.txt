@@ -1,0 +1,7 @@
+# Runtime: the HTTP layer and web search. ddgs is the package's current name; duckduckgo_search is the older one the search agent also accepts.
+fastapi
+uvicorn
+ddgs
+duckduckgo_search
+huggingface_hub
+# llama-cpp-python (the local model) is optional and built only with INSTALL_LLM=1 (see Dockerfile).

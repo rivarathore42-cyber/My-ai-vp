@@ -1,0 +1,156 @@
+/* Galaxy chat page: calm, dark, mobile first (a Samsung Galaxy M13 is about 360 to 412 CSS px wide; desktop widens).
+   Own tokens only (--ui-*); the voice overlays keep the tokens of voice_wakeup.css. No animation on the page itself. */
+
+:root {
+  --ui-bg: #07080d;
+  --ui-text: #eef0f6;
+  --ui-muted: #8b90a2;
+  --ui-faint: #5f6577;
+  --ui-line: rgba(255, 255, 255, .09);
+  --ui-surface: rgba(255, 255, 255, .05);
+  --ui-surface-2: rgba(255, 255, 255, .09);
+  --ui-accent: #aebcff;
+  --ui-ok: #7fe0b5;
+  --ui-warn: #f2b56b;
+}
+
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+
+body.galaxy-dark {
+  background: radial-gradient(900px 420px at 50% -12%, rgba(120, 140, 255, .10), transparent 70%), var(--ui-bg);
+  color: var(--ui-text);
+  font: 15.5px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  height: 100vh; height: 100dvh;
+  display: flex; flex-direction: column;
+  max-width: 720px; min-width: 0; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+/* Top bar: wordmark and a status dot. The voice button sits at the right edge, so the bar keeps clear of it. */
+#app .topbar {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: 52px; padding-right: 64px;
+}
+#app .wordmark { font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+#status { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ui-muted); }
+#status .status-text { white-space: nowrap; }
+#status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-faint); }
+#status[data-kind="ready"] .dot { background: var(--ui-ok); box-shadow: 0 0 10px rgba(127, 224, 181, .45); }
+#status[data-kind="offline"] { color: var(--ui-warn); }
+#status[data-kind="offline"] .dot { background: var(--ui-warn); }
+
+/* Chat area */
+#chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; color: var(--ui-muted);
+}
+#empty h1 { margin: 0 0 8px; font-size: 26px; font-weight: 600; letter-spacing: -.01em; color: var(--ui-text); }
+#empty p { margin: 0; max-width: 300px; font-size: 14px; }
+#chat.has-messages #empty { display: none; }
+
+#messages {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 18px; padding: 12px 2px 14px;
+}
+#messages .msg { display: flex; min-width: 0; }
+#messages .msg.user { justify-content: flex-end; }
+#messages .bubble {
+  min-width: 0; max-width: 86%;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+}
+#messages .msg.user .bubble { padding: 10px 15px; border-radius: 18px 18px 6px 18px; background: var(--ui-surface-2); }
+#messages .msg.bot .bubble { max-width: 100%; padding: 2px; }
+#messages .msg.pending .bubble { color: var(--ui-muted); font-size: 14px; }
+#messages .msg.error .bubble { color: var(--ui-warn); font-size: 14px; }
+
+/* One-line notice, above the composer; it leaves on its own */
+#notice {
+  flex: none; align-self: center; max-width: 100%; margin: 0 0 10px; padding: 8px 14px;
+  border: 1px solid var(--ui-line); border-radius: 999px; background: #151720;
+  color: var(--ui-text); font-size: 13px; line-height: 1.4; text-align: center;
+}
+#notice[data-tone="warn"] { color: var(--ui-warn); }
+#notice[data-tone="ok"] { color: var(--ui-ok); }
+
+/* Permission card: asks once, does not cover the chat */
+#permCard {
+  flex: none; display: grid; gap: 4px; margin: 0 0 10px; padding: 14px 16px;
+  border: 1px solid var(--ui-line); border-radius: 18px; background: #12141c;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+#permCard .perm-title { margin: 0; font-size: 14.5px; font-weight: 600; }
+#permCard .perm-body { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: var(--ui-muted); overflow-wrap: anywhere; }
+#permCard .perm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+#permCard .btn {
+  min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px;
+  background: var(--ui-text); color: #0a0b10; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+#permCard .btn-quiet {
+  min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--ui-muted); font: inherit; font-size: 14px; cursor: pointer;
+}
+
+/* Location chip: shows the place that goes with the next message */
+#locationChip {
+  flex: none; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%; margin: 0 0 10px; padding: 4px 6px 4px 14px;
+  border: 1px solid var(--ui-line); border-radius: 999px; background: var(--ui-surface);
+  color: var(--ui-muted); font-size: 13px;
+}
+#locationChip .location-text {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+#locationChip .link-btn {
+  min-height: 30px; padding: 0 9px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--ui-accent); font: inherit; font-size: 13px; cursor: pointer;
+}
+
+/* Composer: one rounded field with the tools, the text and the send button */
+#composer {
+  flex: none; display: flex; align-items: flex-end; gap: 4px;
+  padding: 6px 6px 6px 8px; border: 1px solid var(--ui-line); border-radius: 26px; background: var(--ui-surface);
+}
+#composer .tools { display: flex; align-items: center; flex: none; }
+#composer .tool,
+#composer .send {
+  width: 40px; height: 40px; min-width: 40px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+}
+#composer .tool { background: transparent; color: var(--ui-muted); }
+#composer .tool:hover { color: var(--ui-text); }
+#composer .send { background: var(--ui-text); color: #0a0b10; }
+#composer .send:disabled { opacity: .35; cursor: default; }
+#composer svg { width: 20px; height: 20px; display: block; }
+#input {
+  flex: 1; min-width: 0; max-height: 140px; padding: 10px 6px; resize: none;
+  border: 0; outline: none; background: transparent; color: var(--ui-text);
+  font: inherit; font-size: 16px; line-height: 1.4;
+}
+#input::placeholder { color: var(--ui-faint); }
+
+:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* The voice button and the orb keep clear of the composer and the top bar */
+.gv-fab { top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; left: auto; bottom: auto; }
+.galaxy-orb { right: 16px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+@media (min-width: 768px) {
+  #messages .bubble { max-width: 78%; font-size: 15.5px; }
+}
+@media (max-width: 360px) {
+  #app .topbar { padding-right: 56px; }
+  #composer .tool, #composer .send { width: 36px; height: 36px; min-width: 36px; }
+  #composer svg { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

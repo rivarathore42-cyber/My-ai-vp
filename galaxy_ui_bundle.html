@@ -1,0 +1,2198 @@
+<!-- Galaxy UI bundle: chat, voice orb, settings, permission cards, all in one file.
+     Open it through the server (http://127.0.0.1:8000/ or your Render URL), not from disk: it calls /api/. -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080d">
+<title>Galaxy</title>
+<link rel="icon" href="data:,">
+<style>/* voice_wakeup.css */
+/* Galaxy voice UI: dark glassmorphism, the voice orb and the settings modal. Local styles only, no remote fonts. */
+:root {
+  --g-bg-1: #05060f;
+  --g-bg-2: #0b1028;
+  --g-glass: rgba(255, 255, 255, 0.06);
+  --g-glass-strong: rgba(14, 18, 40, 0.74);
+  --g-border: rgba(255, 255, 255, 0.14);
+  --g-text: #eef1ff;
+  --g-muted: #9aa3c7;
+  --g-accent: #6ea8ff;
+  --g-accent-2: #b48cff;
+  --g-ok: #5ef2c2;
+  --g-warn: #ffb86b;
+  --g-glow: rgba(110, 168, 255, 0.55);
+  --g-radius: 20px;
+}
+
+body.galaxy-dark {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--g-text);
+  background: radial-gradient(1200px 700px at 15% -10%, #1b2350 0%, transparent 60%),
+              radial-gradient(900px 600px at 110% 110%, #2a1656 0%, transparent 55%),
+              linear-gradient(180deg, var(--g-bg-2), var(--g-bg-1));
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.galaxy-glass {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03)), var(--g-glass-strong);
+  border: 1px solid var(--g-border);
+  border-radius: var(--g-radius);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.muted { color: var(--g-muted); }
+
+.demo-card { max-width: 640px; margin: 40px auto; padding: 24px; }
+.demo-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.demo-row label { display: grid; gap: 6px; font-size: 13px; color: var(--g-muted); flex: 1 1 200px; }
+input[type="text"], input[type="password"], input:not([type]) {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--g-border);
+  border-radius: 12px;
+  color: var(--g-text);
+  padding: 10px 12px;
+  font: inherit;
+}
+input:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 2px; }
+
+.btn {
+  background: linear-gradient(90deg, var(--g-accent), var(--g-accent-2));
+  color: #07081a;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 0 22px var(--g-glow);
+}
+.btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.log {
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--g-border);
+  border-radius: 14px;
+  padding: 12px;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 13px;
+}
+
+/* Settings modal */
+.voice-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 4, 12, 0.6);
+  display: none;
+  place-items: center;
+  z-index: 60;
+}
+.voice-modal-backdrop.open { display: grid; }
+.voice-modal { width: min(440px, calc(100vw - 32px)); padding: 22px; }
+.voice-settings h3 { margin: 0 0 6px; font-size: 18px; }
+.voice-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.voice-row small { display: block; color: var(--g-muted); margin-top: 4px; font-size: 12px; line-height: 1.4; }
+.sensitivity { width: 170px; accent-color: var(--g-accent); }
+.sensitivity-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 170px;
+  font-size: 12px;
+  color: var(--g-muted);
+}
+
+/* Toggle switch: a real checkbox, so keyboard and screen readers work */
+.switch { position: relative; width: 52px; height: 30px; flex: none; display: inline-block; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+.switch .track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--g-border);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.switch .track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.25s;
+}
+.switch input:checked + .track {
+  background: linear-gradient(90deg, var(--g-accent), var(--g-accent-2));
+  box-shadow: 0 0 18px var(--g-glow);
+}
+.switch input:checked + .track::after { transform: translateX(22px); }
+.switch input:focus-visible + .track { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+
+/* Voice orb: bottom-right, hidden while the wake-up is off */
+.galaxy-orb {
+  position: fixed;
+  right: calc(24px + env(safe-area-inset-right, 0px));
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+.galaxy-orb { transition: opacity 0.35s ease, transform 0.35s ease; }
+.galaxy-orb[data-state="off"] { opacity: 0; transform: scale(0.85); pointer-events: none; }
+.galaxy-orb .orb-core {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0, #9ec5ff 25%, var(--g-accent) 55%, var(--g-accent-2) 100%);
+  box-shadow: 0 0 24px var(--g-glow), 0 0 60px rgba(180, 140, 255, 0.35);
+  animation: orb-breathe 2.8s ease-in-out infinite;
+}
+.galaxy-orb .orb-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(110, 168, 255, 0.55);
+  animation: orb-ring 2.4s ease-out infinite;
+}
+.galaxy-orb .orb-bars {
+  position: absolute;
+  bottom: -20px;
+  display: flex;
+  gap: 3px;
+  height: 16px;
+  align-items: flex-end;
+}
+.galaxy-orb .orb-bars i {
+  display: block;
+  width: 3px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--g-ok);
+  opacity: 0;
+}
+.galaxy-orb[data-state="activated"] .orb-bars i { opacity: 1; animation: orb-bar 0.9s ease-in-out infinite; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(2) { animation-delay: 0.1s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(3) { animation-delay: 0.2s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(4) { animation-delay: 0.3s; }
+.galaxy-orb[data-state="activated"] .orb-bars i:nth-child(5) { animation-delay: 0.4s; }
+.galaxy-orb[data-state="activated"] .orb-core { box-shadow: 0 0 40px var(--g-accent-2), 0 0 90px var(--g-glow); }
+.galaxy-orb[data-state="thinking"] .orb-ring {
+  border-style: dashed;
+  border-color: var(--g-accent-2);
+  opacity: 1;
+  animation: orb-spin 1.2s linear infinite;
+}
+.galaxy-orb[data-state="denied"] .orb-core,
+.galaxy-orb[data-state="error"] .orb-core,
+.galaxy-orb[data-state="unsupported"] .orb-core {
+  background: radial-gradient(circle, #b9bfd6, #4b5070);
+  box-shadow: none;
+  animation: none;
+}
+.galaxy-orb[data-state="denied"] .orb-ring,
+.galaxy-orb[data-state="error"] .orb-ring { border-color: var(--g-warn); animation: none; opacity: 0.4; }
+
+.tap-card { position: fixed; left: 16px; right: 16px; bottom: 16px; max-width: 420px; margin: 0 auto; padding: 16px; z-index: 55; }
+.tap-card[hidden] { display: none; }
+
+.galaxy-orb .orb-core { transition: box-shadow 0.45s ease, transform 0.45s ease; }
+
+@keyframes orb-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes orb-ring { from { transform: scale(1); opacity: 0.8; } to { transform: scale(1.9); opacity: 0; } }
+@keyframes orb-bar { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+@keyframes orb-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .galaxy-orb, .galaxy-orb * { animation: none !important; }
+}
+
+/* Chat-page additions */
+.gv-fab {
+  position: fixed;
+  left: calc(16px + env(safe-area-inset-left, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  background: rgba(14, 18, 40, 0.8);
+  color: var(--g-text);
+  border: 1px solid var(--g-border);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.gv-fab:focus-visible { outline: 2px solid var(--g-accent); outline-offset: 3px; }
+.gv-ghost { background: transparent; color: var(--g-text); box-shadow: none; border: 1px solid var(--g-border); }
+.gv-note { font-size: 12px; margin: 10px 0 0; line-height: 1.4; }
+.gv-actions { text-align: right; margin-top: 14px; }
+.tap-card[hidden] { display: none; }
+
+</style>
+<style>/* permission_modal.css */
+/* Galaxy permission prompt: dark glass modal, glowing status dot, app badge, neumorphic buttons. Fade and scale in. */
+.perm-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 4, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+  z-index: 70;
+}
+.perm-backdrop.open { opacity: 1; visibility: visible; }
+.perm-card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 22px;
+  opacity: 0;
+  transform: scale(0.94);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.28s ease;
+}
+.perm-backdrop.open .perm-card { opacity: 1; transform: scale(1); }
+.perm-head { display: flex; align-items: center; gap: 14px; }
+.perm-titles { min-width: 0; }
+.perm-titles h3 { margin: 0; font-size: 18px; }
+.perm-dest { margin: 2px 0 0; font-size: 12px; }
+.perm-badge {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #6ea8ff, #b48cff);
+  box-shadow: 0 0 22px rgba(110, 168, 255, 0.45);
+}
+.perm-badge[data-kind="spotify"] { background: radial-gradient(circle at 30% 30%, #5ef2a0, #0e7a36); }
+.perm-badge[data-kind="whatsapp"] { background: radial-gradient(circle at 30% 30%, #7af0b0, #128c4a); }
+.perm-badge[data-kind="youtube"] { background: radial-gradient(circle at 30% 30%, #ff8d8d, #b00020); }
+.perm-badge[data-kind="call"] { background: radial-gradient(circle at 30% 30%, #9ec5ff, #1d4fb3); }
+.perm-badge[data-kind="camera"] { background: radial-gradient(circle at 30% 30%, #d6b3ff, #5b2aa6); }
+.perm-badge[data-kind="settings"] { background: radial-gradient(circle at 30% 30%, #c9cfe6, #4b5070); }
+.perm-badge[data-kind="notify"] { background: radial-gradient(circle at 30% 30%, #ffe08a, #b06a00); }
+.perm-dot {
+  position: absolute;
+  margin-left: 32px;
+  margin-top: -18px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid rgba(7, 8, 26, 0.9);
+}
+.perm-head { position: relative; }
+.perm-dot[data-tone="amber"] { background: #ffb86b; box-shadow: 0 0 12px #ffb86b; animation: perm-pulse 1.6s ease-in-out infinite; }
+.perm-dot[data-tone="blue"] { background: #6ea8ff; box-shadow: 0 0 12px #6ea8ff; animation: perm-pulse 0.9s ease-in-out infinite; }
+.perm-dot[data-tone="green"] { background: #5ef2c2; box-shadow: 0 0 12px #5ef2c2; }
+.perm-dot[data-tone="red"] { background: #ff6b8b; box-shadow: 0 0 12px #ff6b8b; }
+.perm-dot[data-tone="grey"] { background: #8b8f9e; box-shadow: none; }
+.perm-why { margin: 16px 0 10px; line-height: 1.5; font-size: 14px; }
+.perm-preview {
+  white-space: pre-wrap;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  max-height: 140px;
+  overflow: auto;
+}
+.perm-preview[hidden] { display: none; }
+.perm-meta { margin: 0; font-size: 12px; color: #9aa3c7; min-height: 16px; }
+.perm-status { margin: 8px 0 14px; font-size: 13px; min-height: 18px; }
+.perm-actions { display: grid; gap: 10px; }
+.perm-btn {
+  background: #151a33;
+  color: #eef1ff;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 14px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.45), -4px -4px 10px rgba(255, 255, 255, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+.perm-btn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.04);
+}
+.perm-btn.primary {
+  background: linear-gradient(90deg, #6ea8ff, #b48cff);
+  color: #07081a;
+  box-shadow: 0 0 22px rgba(110, 168, 255, 0.5);
+}
+.perm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.perm-btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.perm-link {
+  margin-top: 12px;
+  background: none;
+  border: 0;
+  color: #9aa3c7;
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.perm-link[hidden] { display: none; }
+@keyframes perm-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.8); } }
+@media (prefers-reduced-motion: reduce) {
+  .perm-backdrop, .perm-card, .perm-btn, .perm-dot { transition: none !important; animation: none !important; }
+}
+
+</style>
+<style>/* app.css */
+/* Galaxy chat page: calm, dark, mobile first (a Samsung Galaxy M13 is about 360 to 412 CSS px wide; desktop widens).
+   Own tokens only (--ui-*); the voice overlays keep the tokens of voice_wakeup.css. No animation on the page itself. */
+
+:root {
+  --ui-bg: #07080d;
+  --ui-text: #eef0f6;
+  --ui-muted: #8b90a2;
+  --ui-faint: #5f6577;
+  --ui-line: rgba(255, 255, 255, .09);
+  --ui-surface: rgba(255, 255, 255, .05);
+  --ui-surface-2: rgba(255, 255, 255, .09);
+  --ui-accent: #aebcff;
+  --ui-ok: #7fe0b5;
+  --ui-warn: #f2b56b;
+}
+
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+
+body.galaxy-dark {
+  background: radial-gradient(900px 420px at 50% -12%, rgba(120, 140, 255, .10), transparent 70%), var(--ui-bg);
+  color: var(--ui-text);
+  font: 15.5px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  height: 100vh; height: 100dvh;
+  display: flex; flex-direction: column;
+  max-width: 720px; min-width: 0; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+}
+
+/* Top bar: wordmark and a status dot. The voice button sits at the right edge, so the bar keeps clear of it. */
+#app .topbar {
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: 52px; padding-right: 64px;
+}
+#app .wordmark { font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+#status { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ui-muted); }
+#status .status-text { white-space: nowrap; }
+#status .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-faint); }
+#status[data-kind="ready"] .dot { background: var(--ui-ok); box-shadow: 0 0 10px rgba(127, 224, 181, .45); }
+#status[data-kind="offline"] { color: var(--ui-warn); }
+#status[data-kind="offline"] .dot { background: var(--ui-warn); }
+
+/* Chat area */
+#chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; color: var(--ui-muted);
+}
+#empty h1 { margin: 0 0 8px; font-size: 26px; font-weight: 600; letter-spacing: -.01em; color: var(--ui-text); }
+#empty p { margin: 0; max-width: 300px; font-size: 14px; }
+#chat.has-messages #empty { display: none; }
+
+#messages {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 18px; padding: 12px 2px 14px;
+}
+#messages .msg { display: flex; min-width: 0; }
+#messages .msg.user { justify-content: flex-end; }
+#messages .bubble {
+  min-width: 0; max-width: 86%;
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+}
+#messages .msg.user .bubble { padding: 10px 15px; border-radius: 18px 18px 6px 18px; background: var(--ui-surface-2); }
+#messages .msg.bot .bubble { max-width: 100%; padding: 2px; }
+#messages .msg.pending .bubble { color: var(--ui-muted); font-size: 14px; }
+#messages .msg.error .bubble { color: var(--ui-warn); font-size: 14px; }
+
+/* One-line notice, above the composer; it leaves on its own */
+#notice {
+  flex: none; align-self: center; max-width: 100%; margin: 0 0 10px; padding: 8px 14px;
+  border: 1px solid var(--ui-line); border-radius: 999px; background: #151720;
+  color: var(--ui-text); font-size: 13px; line-height: 1.4; text-align: center;
+}
+#notice[data-tone="warn"] { color: var(--ui-warn); }
+#notice[data-tone="ok"] { color: var(--ui-ok); }
+
+/* Permission card: asks once, does not cover the chat */
+#permCard {
+  flex: none; display: grid; gap: 4px; margin: 0 0 10px; padding: 14px 16px;
+  border: 1px solid var(--ui-line); border-radius: 18px; background: #12141c;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+}
+#permCard .perm-title { margin: 0; font-size: 14.5px; font-weight: 600; }
+#permCard .perm-body { margin: 0 0 8px; font-size: 13.5px; line-height: 1.5; color: var(--ui-muted); overflow-wrap: anywhere; }
+#permCard .perm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+#permCard .btn {
+  min-height: 40px; padding: 0 20px; border: 0; border-radius: 999px;
+  background: var(--ui-text); color: #0a0b10; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+#permCard .btn-quiet {
+  min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--ui-muted); font: inherit; font-size: 14px; cursor: pointer;
+}
+
+/* Location chip: shows the place that goes with the next message */
+#locationChip {
+  flex: none; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px;
+  max-width: 100%; margin: 0 0 10px; padding: 4px 6px 4px 14px;
+  border: 1px solid var(--ui-line); border-radius: 999px; background: var(--ui-surface);
+  color: var(--ui-muted); font-size: 13px;
+}
+#locationChip .location-text {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+#locationChip .link-btn {
+  min-height: 30px; padding: 0 9px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--ui-accent); font: inherit; font-size: 13px; cursor: pointer;
+}
+
+/* Composer: one rounded field with the tools, the text and the send button */
+#composer {
+  flex: none; display: flex; align-items: flex-end; gap: 4px;
+  padding: 6px 6px 6px 8px; border: 1px solid var(--ui-line); border-radius: 26px; background: var(--ui-surface);
+}
+#composer .tools { display: flex; align-items: center; flex: none; }
+#composer .tool,
+#composer .send {
+  width: 40px; height: 40px; min-width: 40px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+}
+#composer .tool { background: transparent; color: var(--ui-muted); }
+#composer .tool:hover { color: var(--ui-text); }
+#composer .send { background: var(--ui-text); color: #0a0b10; }
+#composer .send:disabled { opacity: .35; cursor: default; }
+#composer svg { width: 20px; height: 20px; display: block; }
+#input {
+  flex: 1; min-width: 0; max-height: 140px; padding: 10px 6px; resize: none;
+  border: 0; outline: none; background: transparent; color: var(--ui-text);
+  font: inherit; font-size: 16px; line-height: 1.4;
+}
+#input::placeholder { color: var(--ui-faint); }
+
+:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* The voice button and the orb keep clear of the composer and the top bar */
+.gv-fab { top: calc(env(safe-area-inset-top, 0px) + 10px); right: 14px; left: auto; bottom: auto; }
+.galaxy-orb { right: 16px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+@media (min-width: 768px) {
+  #messages .bubble { max-width: 78%; font-size: 15.5px; }
+}
+@media (max-width: 360px) {
+  #app .topbar { padding-right: 56px; }
+  #composer .tool, #composer .send { width: 36px; height: 36px; min-width: 36px; }
+  #composer svg { width: 18px; height: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+</style>
+</head>
+<body class="galaxy-dark">
+<div id="app">
+  <header class="topbar">
+    <span class="wordmark">Galaxy</span>
+    <span id="status" data-kind="idle" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span class="status-text">Connecting</span></span>
+  </header>
+
+  <main id="chat">
+    <div id="empty">
+      <h1>Kuch bhi poochhiye</h1>
+      <p>Likhiye ya bolein. File, photo aur location bhi bhej sakte hain.</p>
+    </div>
+    <div id="messages" aria-live="polite"></div>
+
+    <div id="notice" role="status" data-tone="info" hidden></div>
+
+    <div id="permCard" role="dialog" aria-modal="false" aria-labelledby="permTitle" hidden>
+      <p id="permTitle" class="perm-title"></p>
+      <p id="permBody" class="perm-body"></p>
+      <div class="perm-actions">
+        <button type="button" class="btn-quiet" id="permNo">Not now</button>
+        <button type="button" class="btn" id="permYes">Allow</button>
+      </div>
+    </div>
+
+    <div id="locationChip" hidden>
+      <span id="locationText" class="location-text"></span>
+      <button type="button" class="link-btn" id="btnLiveLocation">Live</button>
+      <button type="button" class="link-btn" id="btnClearLocation">Remove</button>
+    </div>
+
+    <form id="composer" onsubmit="return false">
+      <div class="tools">
+        <button type="button" class="tool" id="btnFile" aria-label="Attach a file or photo" title="Attach">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <button type="button" class="tool" id="btnCamera" aria-label="Take a photo" title="Camera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <button type="button" class="tool" id="btnLocation" aria-label="Share my location" title="Location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
+      </div>
+      <textarea id="input" rows="1" maxlength="4000" aria-label="Message" placeholder="Message Galaxy"></textarea>
+      <button type="button" class="send" id="send" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+      </button>
+    </form>
+    <input type="file" id="fileInput" hidden>
+  </main>
+</div>
+
+<!-- Voice: the orb, the Voice & Wake-Up settings, and the tap card (behaviour in voice_ui.js). -->
+<button type="button" class="gv-fab" id="gvFab" aria-haspopup="dialog" aria-controls="gvModal">Voice</button>
+<div class="voice-modal-backdrop" id="gvModal">
+  <div class="galaxy-glass voice-modal" role="dialog" aria-modal="true" aria-labelledby="gvTitle">
+    <section class="voice-settings">
+      <h3 id="gvTitle">Voice &amp; Wake-Up</h3>
+      <p class="muted gv-note" id="gvEngine">Offline engine (Vosk). Your audio stays on this device.</p>
+      <div class="voice-row">
+        <div><span>Voice Wake-Up (Hey Galaxy / Ok Galaxy)</span>
+          <small>Listens only while on. Runs offline, on this device.</small></div>
+        <label class="switch"><input type="checkbox" id="gvWake" role="switch" aria-label="Voice Wake-Up"><span class="track"></span></label>
+      </div>
+      <div class="voice-row">
+        <div><span>Microphone sensitivity</span>
+          <small>Low needs a clear wake phrase at the start. High also accepts near-misses of "Galaxy".</small></div>
+        <div>
+          <input type="range" id="gvSens" class="sensitivity" min="0" max="2" step="1" value="1" aria-label="Microphone sensitivity">
+          <div class="sensitivity-labels" aria-hidden="true"><span>Low</span><span>Medium</span><span>High</span></div>
+        </div>
+      </div>
+      <div class="voice-row">
+        <div><span>Audio feedback (TTS)</span>
+          <small>Speaks voice-command answers with this device's own voices only.</small></div>
+        <label class="switch"><input type="checkbox" id="gvTts" role="switch" aria-label="Audio feedback"><span class="track"></span></label>
+      </div>
+      <p class="muted gv-note" id="gvStatus" aria-live="polite">Wake-up is off.</p>
+    </section>
+    <div class="gv-actions"><button type="button" class="btn" id="gvDone">Done</button></div>
+  </div>
+</div>
+
+<!-- Permission: every Android or platform action waits here for the user's decision (behaviour in permission_modal.js). -->
+<div class="perm-backdrop" id="gvPermModal" aria-hidden="true">
+  <div class="perm-card galaxy-glass" role="dialog" aria-modal="true" aria-labelledby="gvPermTitle">
+    <div class="perm-head">
+      <span class="perm-badge" id="gvPermBadge" aria-hidden="true">G</span>
+      <span class="perm-dot" id="gvPermDot" data-tone="amber" aria-hidden="true"></span>
+      <div class="perm-titles">
+        <h3 id="gvPermTitle"></h3>
+        <p class="muted perm-dest" id="gvPermDest"></p>
+      </div>
+    </div>
+    <p class="perm-why" id="gvPermWhy"></p>
+    <div class="perm-preview" id="gvPermPreview" hidden></div>
+    <p class="perm-meta" id="gvPermMeta"></p>
+    <p class="perm-status" id="gvPermStatus" aria-live="polite"></p>
+    <div class="perm-actions" id="gvPermActions"></div>
+    <button type="button" class="perm-link" id="gvPermRevoke" hidden>Revoke Always Allow</button>
+  </div>
+</div>
+
+<div class="galaxy-glass tap-card" id="gvTap" hidden>
+  <p class="muted" id="gvTapLabel"></p>
+  <button type="button" class="btn" id="gvTapGo">Open</button>
+  <button type="button" class="btn gv-ghost" id="gvTapCancel">Cancel</button>
+</div>
+
+<script>/* voice_wakeup.js */
+/*
+ * Galaxy voice wake-up: pure logic shared by the offline engine (voice_wakeup_vosk.js) and the UI (voice_ui.js).
+ * No speech recognition happens here. Wake-word matching, settings, the chime, local-only TTS and the orb helper live here.
+ * Tests: tests/js/voice_wakeup.test.js.
+ */
+(function (root) {
+  'use strict';
+
+  var WAKE_PHRASES = ['hey galaxy', 'ok galaxy', 'okay galaxy', 'हे गैलेक्सी', 'ओके गैलेक्सी', 'हे गैलक्सी', 'ओके गैलक्सी'];
+  var WAKE_LEAD = ['hey', 'ok', 'okay', 'हे', 'ओके'];
+  var SENSITIVITY = {
+    low:    { minConfidence: 0.6,  anywhere: false, fuzzy: false },
+    medium: { minConfidence: 0.45, anywhere: true,  fuzzy: false },
+    high:   { minConfidence: 0.3,  anywhere: true,  fuzzy: true }
+  };
+  var COMMAND_WINDOW_MS = 6000;
+  var STORAGE_KEY = 'galaxy.voice.v1';
+  var DEFAULTS = { wake: false, sensitivity: 'medium', tts: false, lang: 'en-IN' };
+
+  // Lowercase, keep letters, combining marks (Devanagari vowel signs) and digits; everything else becomes a space.
+  function normalize(s) {
+    return String(s || '').toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function editDistance(a, b) {
+    var prev = [], cur, i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur = [i];
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  function isGalaxyToken(token) {
+    return editDistance(token, 'galaxy') <= 1;
+  }
+
+  // Returns { matched, command }. "command" is whatever was said around the wake phrase.
+  function detectWakeWord(transcript, sensitivity) {
+    var cfg = SENSITIVITY[sensitivity] || SENSITIVITY.medium;
+    var text = normalize(transcript);
+    var i, p, padded, idx, before, after, tokens;
+    if (!text) return { matched: false, command: '' };
+
+    for (i = 0; i < WAKE_PHRASES.length; i++) {
+      p = normalize(WAKE_PHRASES[i]);
+      if (text === p) return { matched: true, command: '' };
+      if (text.indexOf(p + ' ') === 0) return { matched: true, command: text.slice(p.length).trim() };
+    }
+
+    if (cfg.anywhere) {
+      padded = ' ' + text + ' ';
+      for (i = 0; i < WAKE_PHRASES.length; i++) {
+        p = normalize(WAKE_PHRASES[i]);
+        idx = padded.indexOf(' ' + p + ' ');
+        if (idx >= 0) {
+          before = padded.slice(0, idx).trim();
+          after = padded.slice(idx + p.length + 2).trim();
+          return { matched: true, command: (before + ' ' + after).trim() };
+        }
+      }
+    }
+
+    if (cfg.fuzzy) {
+      tokens = text.split(' ');
+      for (i = 0; i + 1 < tokens.length; i++) {
+        if (WAKE_LEAD.indexOf(tokens[i]) !== -1 && isGalaxyToken(tokens[i + 1])) {
+          return { matched: true, command: tokens.slice(i + 2).join(' ') };
+        }
+      }
+    }
+    return { matched: false, command: '' };
+  }
+
+  // Confidence gate. Many engines report 0 when they do not know; those results are not rejected.
+  function shouldAccept(confidence, sensitivity) {
+    var cfg = SENSITIVITY[sensitivity] || SENSITIVITY.medium;
+    if (typeof confidence !== 'number' || confidence === 0) return true;
+    return confidence >= cfg.minConfidence;
+  }
+
+  function loadSettings(storage) {
+    var out = {}, saved, raw, key;
+    for (key in DEFAULTS) out[key] = DEFAULTS[key];
+    try {
+      raw = storage ? storage.getItem(STORAGE_KEY) : null;
+      saved = raw ? JSON.parse(raw) : null;
+      if (saved && typeof saved === 'object') {
+        if (typeof saved.wake === 'boolean') out.wake = saved.wake;
+        if (typeof saved.tts === 'boolean') out.tts = saved.tts;
+        if (SENSITIVITY[saved.sensitivity]) out.sensitivity = saved.sensitivity;
+        if (typeof saved.lang === 'string' && /^[a-z]{2,3}-[A-Z]{2}$/.test(saved.lang)) out.lang = saved.lang;
+      }
+    } catch (e) { /* corrupt or unavailable storage: defaults apply */ }
+    return out;
+  }
+
+  function saveSettings(storage, settings) {
+    try { storage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch (e) { /* storage full or disabled */ }
+  }
+
+  // Short two-tone chime (Web Audio, fully local).
+  function chime(ctx) {
+    if (!ctx) return;
+    if (ctx.state === 'suspended' && ctx.resume) ctx.resume();
+    [880, 1320].forEach(function (freq, i) {
+      var t0 = ctx.currentTime + i * 0.12;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.15, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.42);
+    });
+  }
+
+  // Speaks only with voices that run on this device (localService). Network voices are never used.
+  function normalizeLang(value) { return String(value || '').toLowerCase().replace('_', '-'); }
+
+  // The voice the speaker uses: an offline voice for the requested locale first, then any offline voice in the same
+  // language. A network voice is never used, because a reply must not leave the device.
+  function pickVoice(voices, lang) {
+    var want = normalizeLang(lang || 'en-IN');
+    var base = want.slice(0, 2);
+    var local = (voices || []).filter(function (v) { return v && v.localService; });
+    var exact = local.filter(function (v) { return normalizeLang(v.lang) === want; })[0];
+    if (exact) return exact;
+    return local.filter(function (v) { return normalizeLang(v.lang).indexOf(base) === 0; })[0] || null;
+  }
+
+  // Text for the speaker: chat formatting, code, links and bullets are removed, and the length is capped.
+  function speechText(text, limit) {
+    var s = String(text || '')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/`([^`]*)`/g, '$1')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/^\s*#{1,6}\s*/gm, '')
+      .replace(/^\s*[-*+]\s+/gm, '')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/\|/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return s.slice(0, limit || 600);
+  }
+
+  // Speaks a reply with a steady pace. Returns false when speech is off, when there is nothing to say, or when this
+  // device has no offline voice for the language.
+  function speakReply(text, lang, enabled, synth, UtteranceCtor) {
+    var s = synth || root.speechSynthesis;
+    var U = UtteranceCtor || root.SpeechSynthesisUtterance;
+    if (!enabled || !text || !s || !U) return false;
+    var voices = s.getVoices ? s.getVoices() : [];
+    var voice = pickVoice(voices, lang);
+    var spoken = speechText(text, 600);
+    if (!voice || !spoken) return false;
+    var utterance = new U(spoken);
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    s.speak(utterance);
+    return true;
+  }
+
+  // Defence in depth: the browser opens only destinations the server is allowed to produce.
+  var SAFE_HOSTS = ['www.youtube.com', 'web.whatsapp.com', 'wa.me'];
+  function isSafeActionUrl(url) {
+    var s = String(url || '');
+    if (/^tel:\+?\d{8,15}$/.test(s)) return true;
+    if (/^whatsapp:\/\/send\?phone=\d{8,15}$/.test(s)) return true;
+    try {
+      var u = new URL(s);
+      return u.protocol === 'https:' && SAFE_HOSTS.indexOf(u.hostname) !== -1;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  var ORB_HTML = '<span class="orb-ring"></span><span class="orb-core"></span>' +
+                 '<span class="orb-bars"><i></i><i></i><i></i><i></i><i></i></span>';
+
+  // The voice orb (bottom-right). data-state drives the CSS: off | listening | activated | thinking | denied | error.
+  function mountOrb(container) {
+    var orb = document.createElement('div');
+    orb.className = 'galaxy-orb';
+    orb.setAttribute('role', 'status');
+    orb.setAttribute('aria-label', 'Galaxy voice status');
+    orb.setAttribute('data-state', 'off');
+    orb.innerHTML = ORB_HTML;
+    (container || document.body).appendChild(orb);
+    return { el: orb, setState: function (state) { orb.setAttribute('data-state', state); } };
+  }
+
+  var api = {
+    mountOrb: mountOrb,
+    WAKE_PHRASES: WAKE_PHRASES, SENSITIVITY: SENSITIVITY, DEFAULTS: DEFAULTS,
+    normalize: normalize, editDistance: editDistance, detectWakeWord: detectWakeWord, shouldAccept: shouldAccept,
+    loadSettings: loadSettings, saveSettings: saveSettings,
+    speakReply: speakReply, pickVoice: pickVoice, speechText: speechText, isSafeActionUrl: isSafeActionUrl, chime: chime
+  };
+  root.GalaxyVoice = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<!-- vendor/vosk.js is not bundled: see the README (Voice). Voice Wake-Up stays unavailable without it. -->
+<script>/* voice_wakeup_vosk.js */
+/*
+ * Offline "Hey Galaxy" engine on vosk-browser (Kaldi compiled to WebAssembly).
+ *
+ * Audio never leaves this device: the microphone feeds local recognizers and the buffers are discarded.
+ * The library and the models are served by this server under /static/voice/. The constructor refuses a model URL
+ * from any other origin, so nothing is fetched from elsewhere.
+ *
+ * Two recognizers, one job each:
+ *   wake recognizer     restricted grammar (wake phrases + [unk]); runs while listening.
+ *   command recognizer  free text; created on wake and released after the command or the time window.
+ *
+ * Only the adapter functions below touch the vosk-browser API or the browser audio stack. If the vendored version
+ * differs, change those functions and nothing else. The adapters target: Vosk.createModel(url),
+ * new model.KaldiRecognizer(sampleRate[, grammarJson]), recognizer.on("result" | "partialresult", fn),
+ * recognizer.acceptWaveform(buffer), recognizer.remove(), model.terminate().
+ */
+(function (root) {
+  'use strict';
+
+  var G = (typeof module !== 'undefined' && module.exports) ? require('./voice_wakeup.js') : root.GalaxyVoice;
+
+  var UNK = '[unk]';
+  var COMMAND_WINDOW_MS = 6000;
+  var COOLDOWN_MS = 1500;
+  var WAKE_GRAMMAR = {
+    low: ['hey galaxy', 'ok galaxy', 'हे गैलेक्सी', 'ओके गैलेक्सी'],
+    medium: ['hey galaxy', 'ok galaxy', 'okay galaxy', 'हे गैलेक्सी', 'ओके गैलेक्सी', 'हे गैलक्सी', 'ओके गैलक्सी'],
+    high: ['hey galaxy', 'ok galaxy', 'okay galaxy', 'hey galaxi', 'ok galaxi',
+           'हे गैलेक्सी', 'ओके गैलेक्सी', 'हे गैलक्सी', 'ओके गैलक्सी']
+  };
+
+  // ---- adapters: the only code that touches vosk-browser or the browser audio stack ----
+  function newRecognizer(model, sampleRate, grammar) {
+    return grammar ? new model.KaldiRecognizer(sampleRate, JSON.stringify(grammar))
+                   : new model.KaldiRecognizer(sampleRate);
+  }
+
+  function openMicrophone(onBuffer) {
+    return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: false })
+      .then(function (stream) {
+        var Ctx = root.AudioContext || root.webkitAudioContext;
+        var ctx = new Ctx();
+        var source = ctx.createMediaStreamSource(stream);
+        var node = ctx.createScriptProcessor(4096, 1, 1);   // deprecated API; an AudioWorklet can replace it
+        var mute = ctx.createGain();
+        mute.gain.value = 0;                                // the processor must reach the destination, silently
+        node.onaudioprocess = function (event) { onBuffer(event.inputBuffer); };
+        source.connect(node);
+        node.connect(mute);
+        mute.connect(ctx.destination);
+        return {
+          rate: ctx.sampleRate,
+          stop: function () {
+            node.disconnect();
+            source.disconnect();
+            stream.getTracks().forEach(function (track) { track.stop(); });
+            ctx.close();
+          }
+        };
+      });
+  }
+
+  // ---- pure helpers (tested in Node) ----
+  function messageText(message) {
+    var r = message && message.result;
+    if (!r) return '';
+    return String(r.text || r.partial || '').trim();
+  }
+
+  function assertSameOrigin(url, origin) {
+    if (!origin) return;   // no page origin (Node tests): the caller supplies one when the rule matters
+    var resolved = new URL(url, origin);
+    if (resolved.origin !== origin) {
+      throw new Error('offline model must be served by this server, not ' + resolved.origin);
+    }
+  }
+
+  function isDenied(err) {
+    return !!err && (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.denied === true);
+  }
+
+  function dropRecognizer(rec) {
+    if (!rec) return;
+    try { rec.remove(); } catch (e) { /* already released */ }
+  }
+
+  function LocalVoskVoiceAssistant(options) {
+    var o = options || {};
+    this.opts = {
+      lang: o.lang || 'en-IN',
+      sensitivity: WAKE_GRAMMAR[o.sensitivity] ? o.sensitivity : 'medium',
+      tts: !!o.tts,
+      modelUrl: o.modelUrl || '/static/voice/models/vosk-model-small-en-in-0.4.tar.gz',
+      origin: o.origin !== undefined ? o.origin : (root.location ? root.location.origin : null),
+      vosk: o.vosk,
+      microphone: o.microphone || openMicrophone,
+      chime: o.chime || null,
+      speak: o.speak || null,
+      now: o.now || Date.now,
+      setTimer: o.setTimer || setTimeout,
+      clearTimer: o.clearTimer || clearTimeout,
+      onState: o.onState || function () {},
+      onCommand: o.onCommand || function () {},
+      onError: o.onError || function () {}
+    };
+    this.model = null;
+    this.modelPromise = null;
+    this.wake = null;
+    this.command = null;
+    this.mic = null;
+    this.rate = 16000;
+    this.running = false;
+    this.capturing = false;
+    this.captureTimer = null;
+    this.state = 'off';
+    this.lastWakeAt = -Infinity;
+  }
+
+  LocalVoskVoiceAssistant.prototype._state = function (state) {
+    this.state = state;
+    this.opts.onState(state);
+  };
+
+  // Loads the model once. Concurrent callers share the load; a failed load can be retried.
+  LocalVoskVoiceAssistant.prototype.init = function () {
+    var self = this, vosk;
+    if (this.model) return Promise.resolve(this.model);
+    if (this.modelPromise) return this.modelPromise;
+    try {
+      assertSameOrigin(this.opts.modelUrl, this.opts.origin);
+      vosk = this.opts.vosk || root.Vosk;
+      if (!vosk || typeof vosk.createModel !== 'function') throw new Error('offline speech library is not installed');
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    this.modelPromise = new Promise(function (resolve) {
+      resolve(vosk.createModel(self.opts.modelUrl));
+    }).then(function (model) {
+      self.model = model;
+      return model;
+    }, function (err) {
+      self.modelPromise = null;
+      throw err;
+    });
+    return this.modelPromise;
+  };
+
+  LocalVoskVoiceAssistant.prototype.start = function () {
+    var self = this;
+    if (this.running) return Promise.resolve(true);
+    if (!root.WebAssembly) {
+      this._state('unsupported');
+      return Promise.resolve(false);
+    }
+    this._state('loading');
+    return this.init()
+      .then(function () {
+        return self.opts.microphone(function (buffer) { self._onAudio(buffer); });
+      })
+      .then(function (mic) {
+        self.mic = mic;
+        self.rate = mic.rate;
+        self.running = true;
+        self._buildWake();
+        self._state('listening');
+        return true;
+      })
+      .catch(function (err) {
+        self.running = false;
+        if (self.mic) {
+          try { self.mic.stop(); } catch (e) { /* already stopped */ }
+          self.mic = null;
+        }
+        self._state(isDenied(err) ? 'denied' : 'error');
+        self.opts.onError(err);
+        return false;
+      });
+  };
+
+  LocalVoskVoiceAssistant.prototype._buildWake = function () {
+    var self = this;
+    dropRecognizer(this.wake);
+    this.wake = newRecognizer(this.model, this.rate, WAKE_GRAMMAR[this.opts.sensitivity].concat([UNK]));
+    this.wake.on('partialresult', function (m) { self._onWakeText(messageText(m), false); });
+    this.wake.on('result', function (m) { self._onWakeText(messageText(m), true); });
+  };
+
+  LocalVoskVoiceAssistant.prototype._onAudio = function (buffer) {
+    if (!this.running) return;
+    if (this.capturing) {
+      if (this.command) this.command.acceptWaveform(buffer);
+    } else if (this.wake) {
+      this.wake.acceptWaveform(buffer);
+    }
+  };
+
+  LocalVoskVoiceAssistant.prototype._onWakeText = function (text, isFinal) {
+    var hit;
+    if (!text || !this.running || this.capturing) return;
+    if (this.opts.now() - this.lastWakeAt < COOLDOWN_MS) return;
+    if (!isFinal && this.opts.sensitivity === 'low') return;   // low: only final results count
+    hit = G.detectWakeWord(text, this.opts.sensitivity);
+    if (hit.matched) this._onWake(hit.command);
+  };
+
+  LocalVoskVoiceAssistant.prototype._onWake = function (command) {
+    this.lastWakeAt = this.opts.now();
+    this._playChime();
+    this._state('activated');
+    if (command) this._dispatch(command);
+    else this._startCapture();
+  };
+
+  LocalVoskVoiceAssistant.prototype._startCapture = function () {
+    var self = this;
+    this.capturing = true;
+    this.command = newRecognizer(this.model, this.rate, null);
+    this.command.on('result', function (m) { self._onCommandResult(messageText(m)); });
+    this.captureTimer = this.opts.setTimer(function () { self._endCapture(''); }, COMMAND_WINDOW_MS);
+  };
+
+  LocalVoskVoiceAssistant.prototype._onCommandResult = function (text) {
+    var residue;
+    if (!this.capturing || !text) return;
+    residue = G.detectWakeWord(text, 'low');
+    if (residue.matched && !residue.command) return;   // the wake phrase again, not a command
+    this._endCapture(text);
+  };
+
+  LocalVoskVoiceAssistant.prototype._endCapture = function (text) {
+    if (!this.capturing) return;
+    this.opts.clearTimer(this.captureTimer);
+    this.captureTimer = null;
+    this.capturing = false;
+    dropRecognizer(this.command);
+    this.command = null;
+    if (text) this._dispatch(text);
+    else if (this.running) this._state('listening');
+  };
+
+  LocalVoskVoiceAssistant.prototype._dispatch = function (text) {
+    this._state('thinking');
+    this.opts.onCommand(text);
+  };
+
+  LocalVoskVoiceAssistant.prototype._playChime = function () {
+    if (!this.opts.chime) return;
+    try { this.opts.chime(); } catch (e) { /* no audio output: the orb still pulses */ }
+  };
+
+  // Call after the answer is shown. Speaks only when TTS is on; the speaker itself enforces local voices.
+  LocalVoskVoiceAssistant.prototype.done = function (replyText) {
+    if (this.opts.tts && replyText && this.opts.speak) this.opts.speak(replyText, this.opts.lang);
+    if (this.running && !this.capturing) this._state('listening');
+  };
+
+  LocalVoskVoiceAssistant.prototype.setSensitivity = function (level) {
+    if (!WAKE_GRAMMAR[level]) return;
+    this.opts.sensitivity = level;
+    if (this.running) this._buildWake();
+  };
+
+  LocalVoskVoiceAssistant.prototype.setTts = function (on) {
+    this.opts.tts = !!on;
+  };
+
+  LocalVoskVoiceAssistant.prototype.stop = function () {
+    this.running = false;
+    if (this.captureTimer) this.opts.clearTimer(this.captureTimer);
+    this.captureTimer = null;
+    this.capturing = false;
+    dropRecognizer(this.command);
+    this.command = null;
+    dropRecognizer(this.wake);
+    this.wake = null;
+    if (this.mic) {
+      try { this.mic.stop(); } catch (e) { /* already stopped */ }
+      this.mic = null;
+    }
+    this._state('off');
+  };
+
+  LocalVoskVoiceAssistant.prototype.dispose = function () {
+    this.stop();
+    if (this.model && typeof this.model.terminate === 'function') {
+      try { this.model.terminate(); } catch (e) { /* already terminated */ }
+    }
+    this.model = null;
+    this.modelPromise = null;
+  };
+
+  var api = {
+    LocalVoskVoiceAssistant: LocalVoskVoiceAssistant,
+    WAKE_GRAMMAR: WAKE_GRAMMAR, UNK: UNK,
+    COOLDOWN_MS: COOLDOWN_MS, COMMAND_WINDOW_MS: COMMAND_WINDOW_MS,
+    assertSameOrigin: assertSameOrigin, messageText: messageText, isDenied: isDenied
+  };
+  root.LocalVoskVoiceAssistant = LocalVoskVoiceAssistant;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>/* permission_modal.js */
+/*
+ * Galaxy permission prompt: a glass modal for every Android action. Nothing runs before the user decides here.
+ *
+ * The server keeps the executable action and returns it only with an approved decision. This file opens only what the
+ * server approved, and only allowlisted destinations (the same rules as galaxy/android_intents.py). The pure helpers are
+ * tested in Node (tests/js/permission_modal.test.js); the DOM controller follows them.
+ */
+(function (root) {
+  'use strict';
+
+  var DECISIONS = ['once', 'always', 'deny'];
+  // BEGIN GENERATED ALLOWLIST (galaxy/platforms.py). Do not edit by hand; a test checks this block.
+  var HOSTS = ['music.apple.com', 'music.youtube.com', 'open.spotify.com', 'wa.me', 'web.whatsapp.com', 'www.hotstar.com', 'www.jiosaavn.com', 'www.netflix.com', 'www.primevideo.com', 'www.youtube.com', 'wynk.in'];
+  var PACKAGES = ['com.amazon.avod.thirdpartyclient', 'com.apple.android.music', 'com.bsbportal.music', 'com.google.android.apps.youtube.music', 'com.google.android.contacts', 'com.google.android.dialer', 'com.google.android.youtube', 'com.jio.media.jiobeats', 'com.netflix.mediaclient', 'com.spotify.music', 'com.whatsapp', 'in.startv.hotstar'];
+  var PAIRS = ['music.apple.com|com.apple.android.music', 'music.youtube.com|com.google.android.apps.youtube.music', 'open.spotify.com|com.spotify.music', 'web.whatsapp.com|com.whatsapp', 'www.hotstar.com|in.startv.hotstar', 'www.jiosaavn.com|com.jio.media.jiobeats', 'www.netflix.com|com.netflix.mediaclient', 'www.primevideo.com|com.amazon.avod.thirdpartyclient', 'www.youtube.com|com.google.android.youtube', 'wynk.in|com.bsbportal.music'];
+  var SETTINGS = ['android.settings.BLUETOOTH_SETTINGS', 'android.settings.DISPLAY_SETTINGS', 'android.settings.SOUND_SETTINGS', 'android.settings.WIFI_SETTINGS'];
+  // END GENERATED ALLOWLIST
+  var BADGE = { youtube: '▶', spotify: '♪', whatsapp: 'W', call: '✆', camera: '◉', settings: '⚙', notify: '✦' };
+  var TONE = { idle: 'grey', pending: 'amber', submitting: 'blue', done: 'green', denied: 'red', expired: 'grey', error: 'red' };
+  var STATUS_TEXT = {
+    pending: 'Aapki permission ka intezaar hai.',
+    submitting: 'Bhej raha hoon…',
+    done: 'Ho gaya.',
+    denied: 'Band kar diya gaya. Kuch nahi hua.',
+    expired: 'Request expire ho gayi. Dobara bolein.',
+    error: 'Kuch gadbad hui.'
+  };
+  var TERMINAL = ['done', 'denied', 'expired', 'error'];
+
+  // ---- pure helpers (tested in Node) ----
+  function isSafeLaunchUrl(url) {
+    var s = String(url || ''), m, fallback;
+    if (s.length > 2000) return false;
+    if (/^tel:\+?\d{8,15}$/.test(s)) return true;
+    m = /^https:\/\/([a-z0-9.-]+)(\/[^\s]*)?$/.exec(s);
+    if (m) return HOSTS.indexOf(m[1]) !== -1;
+    m = /^intent:\/\/([a-z0-9.-]+)(\/[^#\s;]*)#Intent;scheme=https;package=([a-z0-9.]+);S\.browser_fallback_url=([^;\s]+);end$/.exec(s);
+    if (m) {
+      if (PAIRS.indexOf(m[1] + '|' + m[3]) === -1) return false;   // a host and a package belong to one platform
+      try {
+        fallback = /^https:\/\/([a-z0-9.-]+)(\/[^\s]*)?$/.exec(decodeURIComponent(m[4]));
+      } catch (e) {
+        return false;
+      }
+      return !!fallback && fallback[1] === m[1];
+    }
+    m = /^intent:#Intent;package=([a-z0-9.]+);end$/.exec(s);
+    if (m) return PACKAGES.indexOf(m[1]) !== -1;
+    m = /^intent:#Intent;action=(android\.settings\.[A-Z_]+);end$/.exec(s);
+    return !!m && SETTINGS.indexOf(m[1]) !== -1;
+  }
+
+  // What the modal shows: the platform badge, the exact action, and the destination. Pure, so Node can check it.
+  function describeAction(request) {
+    var req = request || {};
+    return {
+      platform: req.platform || '',
+      verb: req.verb || '',
+      destination: req.destination || '',
+      badge: req.badge || BADGE[req.kind] || 'G',
+      title: req.title || ''
+    };
+  }
+
+  function decisionBody(requestId, decision) {
+    if (!/^[0-9a-f]{32}$/.test(String(requestId || '')) || DECISIONS.indexOf(decision) === -1) return null;
+    return { request_id: requestId, decision: decision };
+  }
+
+  function buttonsFor(request) {
+    var req = request || {}, canAlways;
+    if (req.mode === 'streamlined') {
+      return { revoke: req.can_always === true, buttons: [
+        { id: 'once', label: 'Continue', enabled: true, primary: true },
+        { id: 'deny', label: 'Deny', enabled: true, primary: false }] };
+    }
+    canAlways = req.can_always === true && req.risk !== 'high';
+    return { revoke: false, buttons: [
+      { id: 'once', label: 'Allow Once', enabled: true, primary: true },
+      { id: 'always', label: 'Always Allow', enabled: canAlways, primary: false,
+        hint: canAlways ? '' : 'Not offered for calls or messages' },
+      { id: 'deny', label: 'Deny', enabled: true, primary: false }] };
+  }
+
+  function reduce(state, event) {
+    var s = state || { phase: 'idle' };
+    switch (event.type) {
+      case 'open':
+        return s.phase === 'idle' ? { phase: 'pending', request: event.request } : s;
+      case 'decide':
+        return (s.phase === 'pending' && decisionBody(s.request.request_id, event.decision))
+          ? { phase: 'submitting', request: s.request, decision: event.decision } : s;
+      case 'result':
+        if (s.phase !== 'submitting') return s;
+        if (event.status === 'approved') return { phase: 'done', request: s.request, action: event.action };
+        if (event.status === 'denied') return { phase: 'denied', request: s.request };
+        if (event.status === 'expired') return { phase: 'expired', request: s.request };
+        return { phase: 'error', request: s.request, message: event.message || 'refused' };
+      case 'fail':
+        return s.phase === 'submitting' ? { phase: 'error', request: s.request, message: event.message || 'network' } : s;
+      case 'expire':
+        return s.phase === 'pending' ? { phase: 'expired', request: s.request } : s;
+      case 'close':
+        return { phase: 'idle' };
+      default:
+        return s;
+    }
+  }
+
+  function countdownLabel(ms) {
+    var total = Math.max(0, Math.floor(ms / 1000));
+    return Math.floor(total / 60) + ':' + String(total % 60).padStart(2, '0');
+  }
+
+  function statusTone(phase) {
+    return TONE[phase] || 'grey';
+  }
+
+  function actionPlan(action) {
+    if (!action) return null;
+    if (action.type === 'open_url' || action.type === 'dial' || action.type === 'settings') {
+      return isSafeLaunchUrl(action.url) ? { kind: 'url', url: action.url } : null;
+    }
+    if (action.type === 'camera') return { kind: 'camera' };
+    if (action.type === 'notify') {
+      return { kind: 'notify', title: String(action.title || 'Galaxy AI').slice(0, 60),
+               body: String(action.body || '').slice(0, 140) };
+    }
+    return null;
+  }
+
+  // ---- DOM controller ----
+  var refs = null, state = { phase: 'idle' }, ticker = null, expiresAt = 0;
+
+  function $(id) { return document.getElementById(id); }
+
+  function getRefs() {
+    if (!refs) {
+      refs = { modal: $('gvPermModal'), title: $('gvPermTitle'), dest: $('gvPermDest'), why: $('gvPermWhy'),
+               preview: $('gvPermPreview'), meta: $('gvPermMeta'), status: $('gvPermStatus'),
+               actions: $('gvPermActions'), dot: $('gvPermDot'), badge: $('gvPermBadge'), revoke: $('gvPermRevoke') };
+    }
+    return refs;
+  }
+
+  function dispatch(event) {
+    state = reduce(state, event);
+    render();
+  }
+
+  function render() {
+    var r = getRefs(), req = state.request || {}, view = buttonsFor(req), terminal = TERMINAL.indexOf(state.phase) !== -1;
+    if (!r.modal) return;
+    r.dot.setAttribute('data-tone', statusTone(state.phase));
+    r.badge.setAttribute('data-kind', req.kind || '');
+    r.badge.textContent = req.badge || BADGE[req.kind] || 'G';
+    r.title.textContent = req.title || '';
+    r.dest.textContent = [req.platform, req.destination].filter(Boolean).join(' · ');
+    r.why.textContent = req.why || '';
+    r.preview.textContent = req.preview || '';
+    r.preview.hidden = !req.preview;
+    var parts = [req.verb ? 'Action: ' + req.verb : '', req.risk === 'high' ? 'High risk: asks every time' : ''];
+    if (state.phase === 'pending') parts.push('Expires in ' + countdownLabel(expiresAt - Date.now()));
+    r.meta.textContent = parts.filter(Boolean).join(' · ');
+    r.status.textContent = (STATUS_TEXT[state.phase] || '') +
+      (state.phase === 'error' && state.message ? ' (' + state.message + ')' : '');
+    r.revoke.hidden = !(view.revoke && state.phase === 'pending');
+    r.actions.textContent = '';   // clears the children without markup
+    var buttons = terminal ? [{ id: 'close', label: 'Close', enabled: true, primary: true }] : view.buttons;
+    buttons.forEach(function (b) {
+      var el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'perm-btn' + (b.primary ? ' primary' : '');
+      el.textContent = b.label;
+      el.setAttribute('data-decision', b.id);
+      el.disabled = !(terminal || state.phase === 'pending') || !b.enabled;
+      if (b.hint) el.title = b.hint;
+      el.onclick = function () { if (b.id === 'close') close(); else decide(b.id); };
+      r.actions.appendChild(el);
+    });
+  }
+
+  function decide(decision) {
+    var body = decisionBody(state.request && state.request.request_id, decision);
+    if (!body || state.phase !== 'pending') return;
+    dispatch({ type: 'decide', decision: decision });
+    var payload = { request_id: body.request_id, decision: body.decision,
+                    user_id: root.galaxyUser ? root.galaxyUser() : '' };
+    var headers = root.galaxyHeaders ? root.galaxyHeaders() : { 'Content-Type': 'application/json' };
+    fetch('/api/android/decision', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        dispatch({ type: 'result', status: data.status, action: data.action, message: data.reason });
+        if (state.phase === 'done') {
+          stopTicker();
+          execute(state.action);
+          setTimeout(close, 900);
+        }
+      })
+      .catch(function () { dispatch({ type: 'fail', message: 'network' }); });
+  }
+
+  // Runs only after the server approved the decision. Browsers may still block pop-ups or the camera picker without a
+  // fresh user gesture; the status line then stays on "Ho gaya" and the user can open the link from the chat.
+  function execute(action) {
+    var plan = actionPlan(action), picker;
+    if (!plan) return;
+    if (plan.kind === 'url') {
+      if (plan.url.indexOf('https://') === 0) root.open(plan.url, '_blank', 'noopener');
+      else root.location.href = plan.url;
+    } else if (plan.kind === 'camera') {
+      picker = document.createElement('input');
+      picker.type = 'file';
+      picker.accept = 'image/*';
+      picker.setAttribute('capture', 'environment');
+      picker.click();
+    } else if (plan.kind === 'notify' && root.Notification && typeof root.Notification.requestPermission === 'function') {
+      root.Notification.requestPermission().then(function (permission) {
+        if (permission === 'granted') new root.Notification(plan.title, { body: plan.body });
+      });
+    }
+  }
+
+  function revokeAlways() {
+    var headers, payload, r = getRefs();
+    if (!state.request) return;
+    headers = root.galaxyHeaders ? root.galaxyHeaders() : { 'Content-Type': 'application/json' };
+    payload = { kind: state.request.kind, user_id: root.galaxyUser ? root.galaxyUser() : '' };
+    fetch('/api/android/revoke', { method: 'POST', headers: headers, body: JSON.stringify(payload) })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        r.status.textContent = data.status === 'revoked' ? 'Always Allow hata diya gaya.' : 'Koi Always Allow nahi mila.';
+      })
+      .catch(function () { r.status.textContent = 'Network error.'; });
+  }
+
+  function stopTicker() {
+    if (ticker) clearInterval(ticker);
+    ticker = null;
+  }
+
+  function tick() {
+    if (state.phase !== 'pending') { stopTicker(); return; }
+    if (Date.now() >= expiresAt) { dispatch({ type: 'expire' }); stopTicker(); return; }
+    render();
+  }
+
+  function open(request) {
+    var r;
+    if (!request || !request.request_id || !$('gvPermModal')) return;
+    stopTicker();
+    expiresAt = Date.now() + (Number(request.expires_in_s) || 120) * 1000;
+    state = { phase: 'idle' };
+    dispatch({ type: 'open', request: request });
+    r = getRefs();
+    r.revoke.onclick = revokeAlways;
+    r.modal.classList.add('open');
+    r.modal.setAttribute('aria-hidden', 'false');
+    ticker = setInterval(tick, 1000);
+    var first = r.actions.querySelector('button:not([disabled])');
+    if (first) first.focus();
+  }
+
+  function close() {
+    var r = getRefs();
+    stopTicker();
+    dispatch({ type: 'close' });
+    if (r.modal) {
+      r.modal.classList.remove('open');
+      r.modal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (state.phase === 'pending') decide('deny');          // Escape is the safe default: deny
+      else if (state.phase !== 'submitting' && state.phase !== 'idle') close();
+    });
+  }
+
+  var pure = {
+    isSafeLaunchUrl: isSafeLaunchUrl, decisionBody: decisionBody, buttonsFor: buttonsFor, reduce: reduce,
+    countdownLabel: countdownLabel, statusTone: statusTone, actionPlan: actionPlan, describeAction: describeAction
+  };
+  root.GalaxyPermission = { open: open, close: close, pure: pure };
+  if (typeof module !== 'undefined' && module.exports) module.exports = pure;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>/* app_logic.js */
+/*
+ * Galaxy page logic that does not touch the DOM or the network: input checks, payloads, error wording, timeouts.
+ * Shared by app.js, device_permissions.js and voice_ui.js, and tested in Node (tests/js/app_logic.test.js).
+ */
+(function (root) {
+  'use strict';
+
+  var MAX_MESSAGE = 4000;
+  var MAX_UPLOAD = 5 * 1024 * 1024;
+  var REQUEST_TIMEOUT_MS = 25000;
+  var UPLOAD_TYPES = { 'image/png': true, 'image/jpeg': true, 'image/gif': true, 'image/webp': true, 'application/pdf': true };
+  var CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
+
+  function round6(n) { return Math.round(n * 1e6) / 1e6; }
+
+  function cleanText(value, limit) {
+    var text = String(value === null || value === undefined ? '' : value);
+    if (typeof text.normalize === 'function') { text = text.normalize('NFC'); }
+    return text.replace(CONTROL, '').trim().slice(0, limit);
+  }
+
+  function checkMessage(value) {
+    if (typeof value !== 'string') { return { value: '', error: 'Message text hona chahiye.' }; }
+    var text = cleanText(value, MAX_MESSAGE + 1);
+    if (text.length > MAX_MESSAGE) { return { value: '', error: 'Message 4000 characters se lamba hai.' }; }
+    return { value: text, error: null };
+  }
+
+  function checkLocation(location) {
+    if (location === null || location === undefined) { return { value: null, error: null }; }
+    var lat = typeof location.lat === 'number' ? location.lat : NaN;
+    var lon = typeof location.lon === 'number' ? location.lon : NaN;
+    if (!isFinite(lat) || !isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return { value: null, error: 'Location galat hai.' };
+    }
+    var accuracy = typeof location.accuracy === 'number' && isFinite(location.accuracy)
+      && location.accuracy >= 0 && location.accuracy <= 100000 ? location.accuracy : null;
+    return { value: { lat: round6(lat), lon: round6(lon), accuracy: accuracy }, error: null };
+  }
+
+  function checkFile(file) {
+    if (!file) { return { error: 'File chuniye.' }; }
+    if (!UPLOAD_TYPES[file.type]) { return { error: 'Ye file type support nahi hai. Image ya PDF chuniye.' }; }
+    if (!(file.size > 0)) { return { error: 'File khali hai.' }; }
+    if (file.size > MAX_UPLOAD) { return { error: 'File 5 MB se badi hai.' }; }
+    return { error: null };
+  }
+
+  function safeName(name) {
+    var base = String(name || 'file').split(/[\\/]/).pop();
+    var clean = base.replace(/[^A-Za-z0-9._-]/g, '_').replace(/^[._]+|[._]+$/g, '').slice(0, 120);
+    return clean || 'file';
+  }
+
+  function buildChatPayload(text, options) {
+    var opts = options || {};
+    var message = checkMessage(text);
+    if (message.error) { return { payload: null, error: message.error }; }
+    if (!message.value) { return { payload: null, error: 'Kuch likhiye ya bolein.' }; }
+    var location = checkLocation(opts.location);
+    if (location.error) { return { payload: null, error: location.error }; }
+    var payload = {
+      message: message.value,
+      conversation_id: 'default',
+      source: opts.source === 'voice' ? 'voice' : 'text'
+    };
+    if (location.value) { payload.location = location.value; }
+    return { payload: payload, error: null };
+  }
+
+  function parseJson(raw) {
+    try { return { ok: true, value: JSON.parse(raw) }; } catch (e) { return { ok: false, value: null }; }
+  }
+
+  function isReply(result) {
+    return !!(result && result.body && typeof result.body.text === 'string' && result.body.text.trim() !== '');
+  }
+
+  function describeFailure(result) {
+    if (!result) { return 'Kuch gadbad hui. Dobara try karein.'; }
+    if (result.timeout) { return 'Jawab me der ho rahi hai. Dobara try karein.'; }
+    if (result.networkError) { return 'Server tak nahi pahunch paya. Internet check karein, ya 1 minute baad try karein.'; }
+    if (result.parseError) { return 'Server ne kuch aur bheja. Dobara try karein.'; }
+    if (isReply(result)) { return result.body.text; }
+    return 'Server se valid jawab nahi mila (status ' + (result.status || '?') + ').';
+  }
+
+  function describeMediaError(name) {
+    switch (name) {
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+      case 'SecurityError':
+        return { state: 'denied', message: 'Permission nahi mili. Browser settings me is site ko allow karein.' };
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        return { state: 'error', message: 'Is device par ye hardware nahi mila.' };
+      case 'NotReadableError':
+      case 'TrackStartError':
+        return { state: 'error', message: 'Hardware kisi aur app me use ho raha hai.' };
+      case 'OverconstrainedError':
+      case 'ConstraintNotSatisfiedError':
+        return { state: 'error', message: 'Is device par ye setting support nahi hoti.' };
+      case 'AbortError':
+        return { state: 'error', message: 'Request radd ho gayi. Dobara try karein.' };
+      default:
+        return { state: 'error', message: 'Kuch gadbad hui. Dobara try karein.' };
+    }
+  }
+
+  function describeGeoError(code) {
+    if (code === 1) { return { state: 'denied', message: 'Location ki permission nahi mili. Settings me allow karein.' }; }
+    if (code === 2) { return { state: 'error', message: 'Location abhi nahi mil rahi. GPS on karke dobara try karein.' }; }
+    if (code === 3) { return { state: 'error', message: 'Location mil ne me der ho gayi. Dobara try karein.' }; }
+    return { state: 'error', message: 'Location nahi mil payi.' };
+  }
+
+  function formatLocation(location) {
+    if (!location) { return ''; }
+    var accuracy = typeof location.accuracy === 'number' ? ' ±' + Math.round(location.accuracy) + ' m' : '';
+    return location.lat.toFixed(4) + ', ' + location.lon.toFixed(4) + accuracy;
+  }
+
+  function withTimeout(promise, ms) {
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () { reject(new Error('timeout')); }, ms);
+      promise.then(function (value) { clearTimeout(timer); resolve(value); },
+                   function (error) { clearTimeout(timer); reject(error); });
+    });
+  }
+
+  var api = {
+    MAX_MESSAGE: MAX_MESSAGE, MAX_UPLOAD: MAX_UPLOAD, REQUEST_TIMEOUT_MS: REQUEST_TIMEOUT_MS,
+    cleanText: cleanText, checkMessage: checkMessage, checkLocation: checkLocation, checkFile: checkFile,
+    safeName: safeName, buildChatPayload: buildChatPayload, parseJson: parseJson, isReply: isReply,
+    describeFailure: describeFailure, describeMediaError: describeMediaError, describeGeoError: describeGeoError,
+    formatLocation: formatLocation, withTimeout: withTimeout
+  };
+  root.GalaxyLogic = api;
+  if (typeof module !== 'undefined' && module.exports) { module.exports = api; }
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>/* device_permissions.js */
+/*
+ * Galaxy device permissions: the microphone, the location and the camera. Each one first shows a short card that says
+ * why it is needed, then the browser's own prompt. Every request resolves to { state, message, ... } and never throws.
+ * States: granted, denied, declined, unsupported, error.
+ */
+(function (root) {
+  'use strict';
+
+  var L = root.GalaxyLogic;
+  var GEO_OPTIONS = { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 };
+  var pendingAnswer = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function secureContext() { return root.isSecureContext !== false; }
+
+  function queryState(name) {
+    var permissions = root.navigator && root.navigator.permissions;
+    if (!permissions || typeof permissions.query !== 'function') { return Promise.resolve('prompt'); }
+    return permissions.query({ name: name }).then(function (status) { return status.state; }, function () { return 'prompt'; });
+  }
+
+  // The explanation card. It does not cover the chat. Resolves true when the person allows, false otherwise.
+  function ask(title, body) {
+    var card = $('permCard');
+    if (!card) { return Promise.resolve(true); }
+    if (pendingAnswer) { pendingAnswer(false); }
+    $('permTitle').textContent = title;
+    $('permBody').textContent = body;
+    card.hidden = false;
+    return new Promise(function (resolve) {
+      pendingAnswer = function (answer) {
+        pendingAnswer = null;
+        card.hidden = true;
+        $('permYes').onclick = null;
+        $('permNo').onclick = null;
+        resolve(answer);
+      };
+      $('permYes').onclick = function () { pendingAnswer(true); };
+      $('permNo').onclick = function () { pendingAnswer(false); };
+      $('permYes').focus();
+    });
+  }
+
+  function failure(error) {
+    var mapped = L.describeMediaError(error && error.name);
+    return { state: mapped.state, message: mapped.message };
+  }
+
+  function stopStream(stream) {
+    if (stream && typeof stream.getTracks === 'function') {
+      stream.getTracks().forEach(function (track) { track.stop(); });
+    }
+  }
+
+  function microphone() {
+    if (!secureContext()) {
+      return Promise.resolve({ state: 'error', message: 'Mic ke liye https chahiye.' });
+    }
+    var media = root.navigator && root.navigator.mediaDevices;
+    if (!media || typeof media.getUserMedia !== 'function') {
+      return Promise.resolve({ state: 'unsupported', message: 'Ye browser mic access nahi deta.' });
+    }
+    return queryState('microphone').then(function (state) {
+      if (state === 'denied') {
+        return { state: 'denied', message: 'Mic ki permission band hai. Browser settings me allow karein.' };
+      }
+      return ask('Microphone',
+                 'Voice commands ke liye mic chahiye. Audio is device par hi process hota hai.')
+        .then(function (allowed) {
+          if (!allowed) {
+            return { state: 'declined', message: 'Voice band hai. Text se poochhiye.' };
+          }
+          return media.getUserMedia({ audio: true }).then(function (stream) {
+            stopStream(stream);   // the permission is what we needed; the voice engine opens its own stream later
+            return { state: 'granted', message: 'Mic ready hai.' };
+          }, failure);
+        });
+    });
+  }
+
+  function toLocation(position) {
+    return { lat: position.coords.latitude, lon: position.coords.longitude, accuracy: position.coords.accuracy };
+  }
+
+  function location() {
+    var geo = root.navigator && root.navigator.geolocation;
+    if (!geo) {
+      return Promise.resolve({ state: 'unsupported', message: 'Ye browser location nahi deta.' });
+    }
+    if (!secureContext()) {
+      return Promise.resolve({ state: 'error', message: 'Location ke liye https chahiye.' });
+    }
+    return queryState('geolocation').then(function (state) {
+      if (state === 'denied') {
+        return { state: 'denied', message: 'Location ki permission band hai. Settings me allow karein.' };
+      }
+      return ask('Location',
+                 'Location sirf location bhejne par ya Live on hone par bheji jayegi. Kabhi bhi band kar sakte hain.')
+        .then(function (allowed) {
+          if (!allowed) {
+            return { state: 'declined', message: 'Location nahi bheji jayegi.' };
+          }
+          return new Promise(function (resolve) {
+            geo.getCurrentPosition(function (position) {
+              resolve({ state: 'granted', location: toLocation(position) });
+            }, function (error) {
+              var mapped = L.describeGeoError(error && error.code);
+              resolve({ state: mapped.state, message: mapped.message });
+            }, GEO_OPTIONS);
+          });
+        });
+    });
+  }
+
+  // Live tracking: only after location() was granted, and only until stopLive() is called.
+  function startLive(onUpdate, onError) {
+    var geo = root.navigator && root.navigator.geolocation;
+    if (!geo) { return null; }
+    return geo.watchPosition(function (position) {
+      onUpdate(toLocation(position));
+    }, function (error) {
+      onError(L.describeGeoError(error && error.code));
+    }, GEO_OPTIONS);
+  }
+
+  function stopLive(watchId) {
+    var geo = root.navigator && root.navigator.geolocation;
+    if (watchId !== null && watchId !== undefined && geo) { geo.clearWatch(watchId); }
+  }
+
+  function camera() {
+    return ask('Camera',
+               'Camera phone ke camera app se khulega. Photo sirf aap lete hain.')
+      .then(function (allowed) {
+        if (!allowed) { return { state: 'declined', message: 'Theek hai, photo nahi lenge.' }; }
+        return { state: 'granted', message: '' };
+      });
+  }
+
+  // The file picker. It must open from a tap, so callers invoke it straight from a click handler.
+  function pickFile(accept, capture) {
+    return new Promise(function (resolve) {
+      var input = $('fileInput');
+      if (!input) { resolve(null); return; }
+      input.value = '';
+      input.accept = accept;
+      if (capture) { input.setAttribute('capture', capture); } else { input.removeAttribute('capture'); }
+      input.onchange = function () {
+        var file = input.files && input.files[0];
+        input.onchange = null;
+        resolve(file || null);
+      };
+      input.click();
+    });
+  }
+
+  root.GalaxyDevice = {
+    ask: ask, microphone: microphone, location: location, camera: camera,
+    startLive: startLive, stopLive: stopLive, pickFile: pickFile, queryState: queryState
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>/* voice_ui.js */
+/*
+ * Galaxy voice UI: settings modal, the voice orb, the tap-to-open card, and the bridge to the chat page.
+ * The page defines window.galaxyVoiceSend(text). The page calls window.galaxyOnAction(action) and
+ * window.galaxyOnReply(text) after each answer. Settings live in localStorage and drive the assistant instance.
+ */
+(function () {
+  'use strict';
+  var G = window.GalaxyVoice;
+  var MODEL_URLS = {
+    'en-IN': '/static/voice/models/vosk-model-small-en-in-0.4.tar.gz',
+    'hi-IN': '/static/voice/models/vosk-model-small-hi-0.22.tar.gz'
+  };
+  var SENS = ['low', 'medium', 'high'];
+  var REPLY_SPEECH_LIMIT = 600;
+  var STATE_TEXT = {
+    off: 'Wake-up is off.',
+    loading: 'Loading the offline speech model…',
+    listening: 'Listening for "Hey Galaxy"…',
+    activated: 'Listening to your command…',
+    thinking: 'Thinking…',
+    denied: 'Microphone permission was denied.',
+    error: 'Could not start the offline speech engine.',
+    unsupported: 'This browser cannot run the offline speech engine.'
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  var settings = G.loadSettings(window.localStorage);
+  var orb = G.mountOrb();
+  var pendingAction = null;
+  var awaitingVoiceReply = false;
+  var audioCtx = null;
+
+  function chimeNow() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      G.chime(audioCtx);
+    } catch (e) { /* no audio output: the orb still pulses */ }
+  }
+
+  var assistant = null;
+  if (typeof window.LocalVoskVoiceAssistant === 'function' && window.Vosk) {
+    assistant = new window.LocalVoskVoiceAssistant({
+      lang: settings.lang,
+      sensitivity: settings.sensitivity,
+      tts: settings.tts,
+      modelUrl: MODEL_URLS[settings.lang] || MODEL_URLS['en-IN'],
+      chime: chimeNow,
+      speak: speakOrWarn,
+      onState: function (state) {
+        orb.setState(state);
+        $('gvStatus').textContent = STATE_TEXT[state] || state;
+      },
+      onCommand: function (text) {
+        awaitingVoiceReply = true;
+        if (!window.galaxyVoiceSend(text)) {
+          awaitingVoiceReply = false;
+          assistant.done('Pehle wala jawab aane do, phir bolein.');
+        }
+      },
+      onError: function (err) { if (window.console) console.warn('voice engine:', err && err.message); }
+    });
+  } else {
+    $('gvEngine').textContent = 'Offline speech library is not installed (galaxy/web/vendor/vosk.js). Voice Wake-Up is unavailable.';
+    $('gvWake').disabled = true;
+  }
+
+  // The chat page calls these. Actions open only after a tap, and only to destinations the browser allows.
+  window.galaxyOnAction = function (action) {
+    if (action && action.type === 'permission_request' && window.GalaxyPermission) {
+      window.GalaxyPermission.open(action);   // every Android action waits for the user's decision
+    }
+  };
+
+  window.galaxyOnReply = function (text) {
+    if (!awaitingVoiceReply) return;   // only answers to voice commands are spoken
+    awaitingVoiceReply = false;
+    if (assistant) assistant.done(String(text || '').slice(0, REPLY_SPEECH_LIMIT));
+  };
+
+  $('gvTapGo').onclick = function () {
+    if (pendingAction) {
+      if (pendingAction.type === 'dial') window.location.href = pendingAction.url;
+      else window.open(pendingAction.url, '_blank', 'noopener');
+    }
+    pendingAction = null;
+    $('gvTap').hidden = true;
+  };
+  $('gvTapCancel').onclick = function () { pendingAction = null; $('gvTap').hidden = true; };
+
+  function openModal(open) {
+    $('gvModal').classList.toggle('open', open);
+    if (open) $('gvDone').focus();
+  }
+  $('gvFab').onclick = function () { openModal(true); };
+  $('gvDone').onclick = function () { openModal(false); };
+  $('gvModal').onclick = function (e) { if (e.target === this) openModal(false); };
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') openModal(false); });
+  window.addEventListener('pagehide', function () { if (assistant) assistant.stop(); });
+
+  function persist() {
+    settings.sensitivity = SENS[Number($('gvSens').value)] || 'medium';
+    settings.tts = $('gvTts').checked;
+    settings.wake = $('gvWake').checked;
+    G.saveSettings(window.localStorage, settings);
+  }
+
+  $('gvSens').value = String(Math.max(0, SENS.indexOf(settings.sensitivity)));
+  $('gvTts').checked = settings.tts;
+  $('gvWake').checked = false;   // the microphone starts only after a tap
+  if (settings.wake) {
+    $('gvStatus').textContent = 'Voice Wake-Up was on. Turn it on again after reload (the microphone needs a tap).';
+  }
+
+  // One clear notice per session when speech is on but this device has no offline voice for the language.
+  var warnedNoVoice = false;
+  function speakOrWarn(text, lang) {
+    var spoken = G.speakReply(text, lang, true);
+    if (!spoken && !warnedNoVoice) {
+      warnedNoVoice = true;
+      say('Is device par offline English (India) voice nahi mili. Settings me Text-to-speech ka voice data install karein.', 'info');
+    }
+    return spoken;
+  }
+  function say(message, tone) {
+    if (typeof window.galaxyNotify === 'function') { window.galaxyNotify(message, tone); }
+  }
+  // The microphone is asked for first, with its explanation card; the voice engine starts only once it is granted.
+  function gateMicrophone() {
+    if (!window.GalaxyDevice) { return Promise.resolve({ state: 'granted', message: '' }); }
+    return window.GalaxyDevice.microphone();
+  }
+
+  $('gvWake').onchange = function () {
+    var box = this;
+    persist();
+    if (!assistant) { box.checked = false; return; }
+    if (box.checked) {
+      gateMicrophone().then(function (perm) {
+        if (perm.state !== 'granted') {
+          box.checked = false;
+          persist();
+          say(perm.message, perm.state === 'declined' ? 'info' : 'warn');
+          return;
+        }
+        return assistant.start().then(function (ok) {
+          if (!ok) box.checked = false;
+          persist();
+        });
+      });
+    } else {
+      assistant.stop();
+      persist();
+    }
+  };
+  $('gvSens').oninput = function () {
+    persist();
+    if (assistant) assistant.setSensitivity(settings.sensitivity);
+  };
+  $('gvTts').onchange = function () {
+    persist();
+    if (assistant) assistant.setTts(settings.tts);
+  };
+})();
+
+</script>
+<script>/* app.js */
+/*
+ * Galaxy chat page. It opens straight into the assistant: no pairing, no password. Pure helpers are in app_logic.js,
+ * permission cards in device_permissions.js, voice in voice_ui.js. Replies are rendered with textContent only.
+ */
+(function () {
+  'use strict';
+
+  var L = window.GalaxyLogic;
+  var D = window.GalaxyDevice;
+  var NO_NETWORK = 'Server nahi mil raha. Free hosting par server so raha ho sakta hai: 1 minute baad dobara try karein.';
+  var busy = false;
+  var currentLocation = null;
+  var liveWatch = null;
+  var noticeTimer = null;
+
+  window.galaxyUser = function () { return ''; };   // the identity comes from the server session, never from the page
+  window.galaxyHeaders = function () { return { 'Content-Type': 'application/json' }; };
+
+  function $(id) { return document.getElementById(id); }
+
+  function setStatus(kind, text) {
+    $('status').setAttribute('data-kind', kind);
+    $('status').querySelector('.status-text').textContent = text;
+  }
+
+  function notify(message, tone) {
+    var box = $('notice');
+    box.textContent = message;
+    box.setAttribute('data-tone', tone || 'info');
+    box.hidden = false;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(function () { box.hidden = true; }, 4500);
+  }
+  window.galaxyNotify = notify;
+
+  function bubble(role, text) {
+    $('chat').classList.add('has-messages');
+    var row = document.createElement('div');
+    row.className = 'msg ' + role;
+    var body = document.createElement('div');
+    body.className = 'bubble';
+    body.textContent = text;
+    row.appendChild(body);
+    var list = $('messages');
+    list.appendChild(row);
+    list.scrollTop = list.scrollHeight;
+    return row;
+  }
+
+  function setBusy(value) {
+    busy = value;
+    $('send').disabled = value;
+  }
+
+  // Every request has a timeout, and nothing in it can throw into the page: the result is always an object.
+  function request(path, options) {
+    var opts = options || {};
+    var init = { method: opts.method || 'GET', credentials: 'same-origin', headers: window.galaxyHeaders() };
+    if (opts.body !== undefined) { init.body = JSON.stringify(opts.body); }
+    var controller = typeof AbortController === 'function' ? new AbortController() : null;
+    if (controller) { init.signal = controller.signal; }
+    var timer = setTimeout(function () { if (controller) { controller.abort(); } }, L.REQUEST_TIMEOUT_MS);
+    return fetch(path, init).then(function (res) {
+      return res.text().then(function (raw) {
+        clearTimeout(timer);
+        var parsed = L.parseJson(raw);
+        if (!parsed.ok) { return { parseError: true, status: res.status }; }
+        return { ok: res.ok, status: res.status, body: parsed.value };
+      });
+    }).catch(function (err) {
+      clearTimeout(timer);
+      if (err && err.name === 'AbortError') { return { timeout: true }; }
+      return { networkError: true };
+    });
+  }
+
+  function connect() {
+    setStatus('idle', 'Connecting');
+    return request('/api/me').then(function (r) {
+      if (r.ok && r.body && r.body.ok === true) {
+        setStatus('ready', 'Ready');
+        return true;
+      }
+      setStatus('offline', 'Offline');
+      notify(r.networkError ? NO_NETWORK : L.describeFailure(r), 'warn');
+      return false;
+    });
+  }
+
+  function sendMessage(text, source) {
+    if (busy) {
+      notify('Pehle wala jawab aane dijiye.', 'info');
+      return false;
+    }
+    var built = L.buildChatPayload(text, { source: source, location: currentLocation });
+    if (built.error) {
+      notify(built.error, 'warn');
+      return false;
+    }
+    setBusy(true);
+    bubble('user', built.payload.message);
+    var waiting = bubble('bot pending', 'Soch raha hoon…');
+    request('/api/chat', { method: 'POST', body: built.payload }).then(function (r) {
+      waiting.remove();
+      if (r.status === 401) { setStatus('offline', 'Offline'); }
+      if (L.isReply(r)) {
+        bubble(r.body.ok === false ? 'bot error' : 'bot', r.body.text);
+        if (r.body.action && window.galaxyOnAction) { window.galaxyOnAction(r.body.action); }
+        if (window.galaxyOnReply) { window.galaxyOnReply(r.body.text); }
+      } else {
+        var message = r.networkError ? NO_NETWORK : L.describeFailure(r);
+        bubble('bot error', message);
+        if (window.galaxyOnReply) { window.galaxyOnReply(message); }
+      }
+    }).catch(function () {
+      bubble('bot error', 'Kuch gadbad hui. Dobara try karein.');
+    }).then(function () {
+      setBusy(false);
+    });
+    return true;
+  }
+
+  // The voice flow sends its recognised text through this hook.
+  window.galaxyVoiceSend = function (text) { return sendMessage(text, 'voice'); };
+
+  function readAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.onerror = function () { reject(reader.error || new Error('read failed')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function sendFile(file) {
+    var check = L.checkFile(file);
+    if (check.error) {
+      notify(check.error, 'warn');
+      return;
+    }
+    if (busy) {
+      notify('Pehle wala kaam chal raha hai.', 'info');
+      return;
+    }
+    setBusy(true);
+    var label = L.safeName(file.name);
+    bubble('user', label);
+    var waiting = bubble('bot pending', 'File check ho rahi hai…');
+    readAsDataUrl(file).then(function (dataUrl) {
+      return request('/api/upload', { method: 'POST', body: { filename: label, mime: file.type, data: dataUrl } });
+    }).then(function (r) {
+      waiting.remove();
+      if (L.isReply(r)) {
+        bubble(r.body.ok ? 'bot' : 'bot error', r.body.text);
+      } else {
+        bubble('bot error', r.networkError ? NO_NETWORK : L.describeFailure(r));
+      }
+    }, function () {
+      waiting.remove();
+      bubble('bot error', 'File padhi nahi ja saki. Dobara chunein.');
+    }).then(function () {
+      setBusy(false);
+    }, function () {
+      setBusy(false);
+    });
+  }
+
+  function showLocation() {
+    var chip = $('locationChip');
+    if (currentLocation) {
+      $('locationText').textContent = L.formatLocation(currentLocation);
+      chip.hidden = false;
+    } else {
+      chip.hidden = true;
+    }
+  }
+
+  function stopLive() {
+    if (liveWatch !== null) { D.stopLive(liveWatch); }
+    liveWatch = null;
+    $('btnLiveLocation').textContent = 'Live';
+  }
+
+  function clearLocation() {
+    currentLocation = null;
+    stopLive();
+    showLocation();
+  }
+
+  $('send').onclick = function () {
+    var box = $('input');
+    if (sendMessage(box.value, 'text')) {
+      box.value = '';
+      box.style.height = '';
+    }
+  };
+  $('input').addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      $('send').click();
+    }
+  });
+  $('input').addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+
+  $('btnFile').onclick = function () {
+    D.pickFile('image/*,application/pdf', null).then(function (file) {
+      if (file) { sendFile(file); }
+    });
+  };
+  $('btnCamera').onclick = function () {
+    D.camera().then(function (answer) {
+      if (answer.state !== 'granted') {
+        notify(answer.message, 'info');
+        return null;
+      }
+      return D.pickFile('image/*', 'environment');
+    }).then(function (file) {
+      if (file) { sendFile(file); }
+    });
+  };
+
+  $('btnLocation').onclick = function () {
+    D.location().then(function (result) {
+      if (result.state === 'granted') {
+        currentLocation = result.location;
+        showLocation();
+      } else {
+        notify(result.message, result.state === 'declined' ? 'info' : 'warn');
+      }
+    });
+  };
+  $('btnLiveLocation').onclick = function () {
+    if (liveWatch !== null) {
+      stopLive();
+      notify('Live location band.', 'info');
+      return;
+    }
+    D.location().then(function (result) {
+      if (result.state !== 'granted') {
+        notify(result.message, 'warn');
+        return;
+      }
+      currentLocation = result.location;
+      showLocation();
+      var id = D.startLive(function (loc) {
+        currentLocation = loc;
+        showLocation();
+      }, function (err) {
+        notify(err.message, 'warn');
+        stopLive();
+      });
+      if (id === null) {
+        notify('Is device par live location nahi chal sakti.', 'warn');
+        return;
+      }
+      liveWatch = id;
+      $('btnLiveLocation').textContent = 'Stop';
+    });
+  };
+  $('btnClearLocation').onclick = clearLocation;
+
+  connect();
+})();
+
+</script>
+</body>
+</html>
